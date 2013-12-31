@@ -14,19 +14,16 @@ int yywrap()
 }
 
 int value = 0;
-int Prefix(struct Tree *p) {
+int Traverse(struct Tree *p) {
 	if (p->isOp) {
-		printf("%c", p->val);
+		int t = Traverse(p->left);
 		switch (p->val) {
-			case '+': return (Prefix(p->left) + Prefix(p->right));
-			case '-': return (Prefix(p->left) - Prefix(p->right));
-			case '*': return (Prefix(p->left) * Prefix(p->right));
-			case '/': return (Prefix(p->left) / Prefix(p->right));
+			case '+': return t + Traverse(p->right);
+			case '-': return t - Traverse(p->right);
+			case '*': return t * Traverse(p->right);
+			case '/': return t / Traverse(p->right);
 		}
-	} else {
-		printf("%d", p->val);
-		return p->val;
-	}
+	} else return p->val;
 }
 
 main()
@@ -49,7 +46,7 @@ main()
 %%
 
 
-expression:	exp '\n'	{ printf(" = %d\n", Prefix($1)); exit(1); }
+expression:	exp '\n'	{ printf("Value = %d", Traverse($1)); exit(1); }
 
 exp:	NUMBER	{
 					struct Tree *p = malloc(sizeof(struct Tree));
