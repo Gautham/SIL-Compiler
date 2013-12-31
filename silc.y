@@ -13,15 +13,15 @@ int yywrap()
 	return 1;
 }
 
-int value = 0;
-int Traverse(struct Tree *p) {
+int Var[26];
+int Evaluate(struct Tree *p) {
 	if (p->isOp) {
-		int t = Traverse(p->left);
+		int t = Evaluate(p->left);
 		switch (p->val) {
-			case '+': return t + Traverse(p->right);
-			case '-': return t - Traverse(p->right);
-			case '*': return t * Traverse(p->right);
-			case '/': return t / Traverse(p->right);
+			case '+': return t + Evaluate(p->right);
+			case '-': return t - Evaluate(p->right);
+			case '*': return t * Evaluate(p->right);
+			case '/': return t / Evaluate(p->right);
 		}
 	} else return p->val;
 }
@@ -38,19 +38,46 @@ main()
 }
 
 %token <number> NUMBER;
+%token <number> ID;
+%token <number> TOKREAD;
+%token <number> TOKWRITE;
+%token <number> BREAK;
+%token <number> TOKEXIT;
 %type <node> exp;
+%type <number> expression;
 
 %left '+' '-'
 %left '*' '/'
 
 %%
 
+slist:	
+		|
+		slist statement BREAK;
 
-expression:	exp '\n'	{ printf("Value = %d", Traverse($1)); exit(1); }
+statement:	
+			|
+			ID '=' expression { Var[$1] = $3;	}
+			|
+			TOKREAD '(' ID ')' { printf("? %c = ", $3); scanf("%d", &Var[$3]); }
+			|
+			TOKWRITE '(' expression ')' { printf("%d", $3); }
+			|
+			expression { printf("%d", $1); }
+			|
+			TOKEXIT { exit(0); }
+
+expression:	exp	{ $$ = Evaluate($1); }
 
 exp:	NUMBER	{
 					struct Tree *p = malloc(sizeof(struct Tree));
 					p->val = $1;
+					p->isOp = 0;
+					$$ = p;
+				}
+		|	ID	{
+					struct Tree *p = malloc(sizeof(struct Tree));
+					p->val = Var[$1];
 					p->isOp = 0;
 					$$ = p;
 				}
