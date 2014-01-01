@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include "tree.h"
+#include "treeHelper.h"
 #include <stdlib.h>
 
 void yyerror(const char *str)
@@ -22,6 +23,7 @@ int Evaluate(struct Tree *p) {
 			case '-': return t - Evaluate(p->right);
 			case '*': return t * Evaluate(p->right);
 			case '/': return t / Evaluate(p->right);
+			case '%': return t % Evaluate(p->right);
 		}
 	} else return p->val;
 }
@@ -37,17 +39,16 @@ main()
 	struct Tree *node;
 }
 
-%token <number> NUMBER;
-%token <number> ID;
-%token <number> TOKREAD;
-%token <number> TOKWRITE;
-%token <number> BREAK;
-%token <number> TOKEXIT;
+%token <number> NUMBER ID TOKREAD TOKWRITE BREAK TOKEXIT TOKEQUAL;
+
 %type <node> exp;
 %type <number> expression;
 
+
+%left TOKEQUAL
+%left '<' '>'
 %left '+' '-'
-%left '*' '/'
+%left '*' '/' '%'
 
 %%
 
@@ -59,59 +60,21 @@ statement:
 			|
 			ID '=' expression { Var[$1] = $3;	}
 			|
-			TOKREAD '(' ID ')' { printf("? %c = ", $3); scanf("%d", &Var[$3]); }
+ 			TOKREAD '(' ID ')' { printf("? %c = ", $3); scanf("%d", &Var[$3]); }
 			|
 			TOKWRITE '(' expression ')' { printf("%d", $3); }
-			|
-			expression { printf("%d", $1); }
 			|
 			TOKEXIT { exit(0); }
 
 expression:	exp	{ $$ = Evaluate($1); }
 
-exp:	NUMBER	{
-					struct Tree *p = malloc(sizeof(struct Tree));
-					p->val = $1;
-					p->isOp = 0;
-					$$ = p;
-				}
-		|	ID	{
-					struct Tree *p = malloc(sizeof(struct Tree));
-					p->val = Var[$1];
-					p->isOp = 0;
-					$$ = p;
-				}
-		|	exp '+' exp	{
-							struct Tree *p = malloc(sizeof(struct Tree));
-							p->val = '+';
-							p->isOp = 1;
-							p->left = $1;
-							p->right = $3;
-							$$ = p;
-						}
-		|	exp '-' exp	{
-							struct Tree *p = malloc(sizeof(struct Tree));
-							p->val = '-';
-							p->isOp = 1;
-							p->left = $1;
-							p->right = $3;
-							$$ = p;
-						}
-		|	exp '*' exp	{
-							struct Tree *p = malloc(sizeof(struct Tree));
-							p->val = '*';
-							p->isOp = 1;
-							p->left = $1;
-							p->right = $3;
-							$$ = p;
-						}
-		|	exp '/' exp	{
-							struct Tree *p = malloc(sizeof(struct Tree));
-							p->val = '/';
-							p->isOp = 1;
-							p->left = $1;
-							p->right = $3;
-							$$ = p;
-						}								
+exp:	NUMBER	{ $$ = makeNumTree($1); }
+		|	ID	{ $$ = makeNumTree(Var[$1]); }
+		|	exp '+' exp	{ $$ = makeOpTree('+', $1, $3); }
+		|	exp '-' exp	{ $$ = makeOpTree('-', $1, $3); }
+		|	exp '*' exp	{ $$ = makeOpTree('*', $1, $3); }
+		|	exp '/' exp	{ $$ = makeOpTree('/', $1, $3); }
+		|	exp '%' exp	{ $$ = makeOpTree('%', $1, $3); }
+		|	exp TOKEQUAL exp { $$ = (Evaluate($1) == Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
 		|	'(' exp ')' { $$ = $2; }
 %%
