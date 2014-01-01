@@ -13,6 +13,6 @@
 "write"	{ return TOKWRITE; }
 "exit"	{ return TOKEXIT; }
 [ \t\n]+ ;
-[+\-*/%()=] { return (int)yytext[0]; }
+[+\-*/%()=<>] { return (int)yytext[0]; }
 "=="	{ return TOKEQUAL; }
 %%

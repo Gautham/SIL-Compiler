@@ -76,5 +76,7 @@ exp:	NUMBER	{ $$ = makeNumTree($1); }
 		|	exp '/' exp	{ $$ = makeOpTree('/', $1, $3); }
 		|	exp '%' exp	{ $$ = makeOpTree('%', $1, $3); }
 		|	exp TOKEQUAL exp { $$ = (Evaluate($1) == Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
+		|	exp '>' exp { $$ = (Evaluate($1) > Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
+		|	exp '<' exp { $$ = (Evaluate($1) < Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
 		|	'(' exp ')' { $$ = $2; }
 %%
