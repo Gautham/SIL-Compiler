@@ -26,7 +26,7 @@ main()
 	struct Node *node;
 }
 
-%token <number> NUMBER ID READ WRITE BREAK EXIT TOKEQUAL IF THEN ENDIF;
+%token <number> NUMBER ID READ WRITE BREAK EXIT TOKEQUAL IF THEN ELSE ENDIF WHILE DO ENDWHILE;
 
 %type <node> exp Body slist statement;
 
@@ -49,6 +49,8 @@ statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0); }
 			|	READ '(' ID ')' { $$ = MakeNode($3, 'R', 0, 0, 0); }
 			|	ID '=' exp { $$ = MakeNode($1, 'A', $3, 0, 0); }
 			|	IF '(' exp ')' THEN slist ENDIF { $$ = MakeNode(0, 'C', $3, $6, 0); }
+			|	IF '(' exp ')' THEN slist ELSE slist ENDIF { $$ = MakeNode(0, 'C', $3, $6, $8); }
+			|	WHILE '(' exp ')' DO slist ENDWHILE { $$ = MakeNode(0, 'L', $3, $6, 0); }
 
 exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0); }
 		|	ID	{ $$ = MakeNode($1, 'v', 0, 0, 0); }

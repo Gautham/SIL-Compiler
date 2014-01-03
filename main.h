@@ -42,6 +42,10 @@ int Evaluate(struct Node *T) {
 			if (T->t1) Evaluate(T->t1);
 			return 1;
 		case 'C':
-			if (Evaluate(T->t1)) Evaluate(T->t2);
+			if (Evaluate(T->t1)) Evaluate(T->t2); else if (T->t3) Evaluate(T->t3);
+			return 1;
+		case 'L':
+			while (Evaluate(T->t1)) Evaluate(T->t2);
+				
 	}
 }

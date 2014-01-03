@@ -14,7 +14,11 @@
 "exit"	{ return EXIT; }
 "if"	{ return IF; }
 "then"	{ return THEN; }
+"else"	{ return ELSE; }
 "endif"	{ return ENDIF; }
+"while"	{ return WHILE; }
+"do"	{ return DO; }
+"endwhile"	{ return ENDWHILE; }
 [ \t\n]+ ;
 [+\-*/%()=<>] { return (int)yytext[0]; }
 ">=" { return 'g'; }
