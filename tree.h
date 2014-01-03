@@ -1,6 +1,4 @@
-struct Tree {
-	int val;
-	char isOp;
-	struct Tree *left;
-	struct Tree *right;
+struct Node {
+	int value, type;
+	struct Node *t1, *t2, *t3;
 };

@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include "tree.h"
-#include "treeHelper.h"
+#include "main.h"
 #include <stdlib.h>
 
 void yyerror(const char *str)
@@ -14,19 +14,6 @@ int yywrap()
 	return 1;
 }
 
-int Var[26];
-int Evaluate(struct Tree *p) {
-	if (p->isOp) {
-		int t = Evaluate(p->left);
-		switch (p->val) {
-			case '+': return t + Evaluate(p->right);
-			case '-': return t - Evaluate(p->right);
-			case '*': return t * Evaluate(p->right);
-			case '/': return t / Evaluate(p->right);
-			case '%': return t % Evaluate(p->right);
-		}
-	} else return p->val;
-}
 
 main()
 {
@@ -36,47 +23,44 @@ main()
 
 %union {
 	int number;
-	struct Tree *node;
+	struct Node *node;
 }
 
-%token <number> NUMBER ID TOKREAD TOKWRITE BREAK TOKEXIT TOKEQUAL;
+%token <number> NUMBER ID READ WRITE BREAK EXIT TOKEQUAL IF THEN ENDIF;
 
-%type <node> exp;
-%type <number> expression;
+%type <node> exp Body slist statement;
 
-
-%left TOKEQUAL
-%left '<' '>'
+%right TOKEQUAL
+%left '<' '>' 'g' 'l'
 %left '+' '-'
 %left '*' '/' '%'
 
+%start Program
 %%
 
-slist:	
-		|
-		slist statement BREAK;
+Program: Body EXIT BREAK { exit(0); }
 
-statement:	
-			|
-			ID '=' expression { Var[$1] = $3;	}
-			|
- 			TOKREAD '(' ID ')' { printf("? %c = ", $3); scanf("%d", &Var[$3]); }
-			|
-			TOKWRITE '(' expression ')' { printf("%d", $3); }
-			|
-			TOKEXIT { exit(0); }
+Body: slist { Evaluate($1); }
 
-expression:	exp	{ $$ = Evaluate($1); }
+slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $2, $1, 0); }
+		|	statement BREAK { $$ = $1; }
 
-exp:	NUMBER	{ $$ = makeNumTree($1); }
-		|	ID	{ $$ = makeNumTree(Var[$1]); }
-		|	exp '+' exp	{ $$ = makeOpTree('+', $1, $3); }
-		|	exp '-' exp	{ $$ = makeOpTree('-', $1, $3); }
-		|	exp '*' exp	{ $$ = makeOpTree('*', $1, $3); }
-		|	exp '/' exp	{ $$ = makeOpTree('/', $1, $3); }
-		|	exp '%' exp	{ $$ = makeOpTree('%', $1, $3); }
-		|	exp TOKEQUAL exp { $$ = (Evaluate($1) == Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
-		|	exp '>' exp { $$ = (Evaluate($1) > Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
-		|	exp '<' exp { $$ = (Evaluate($1) < Evaluate($3)) ? makeNumTree(1) : makeNumTree(0); }
+statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0); }
+			|	READ '(' ID ')' { $$ = MakeNode($3, 'R', 0, 0, 0); }
+			|	ID '=' exp { $$ = MakeNode($1, 'A', $3, 0, 0); }
+			|	IF '(' exp ')' THEN slist ENDIF { $$ = MakeNode(0, 'C', $3, $6, 0); }
+
+exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0); }
+		|	ID	{ $$ = MakeNode($1, 'v', 0, 0, 0); }
+		|	exp '+' exp	{ $$ = MakeNode(0, '+', $1, $3, 0); }
+		|	exp '-' exp	{ $$ = MakeNode(0, '-', $1, $3, 0); }
+		|	exp '*' exp	{ $$ = MakeNode(0, '*', $1, $3, 0); }
+		|	exp '/' exp	{ $$ = MakeNode(0, '/', $1, $3, 0); }
+		|	exp '%' exp	{ $$ = MakeNode(0, '%', $1, $3, 0); }
+		|	exp '>' exp	{ $$ = MakeNode(0, '>', $1, $3, 0); }
+		|	exp '<' exp	{ $$ = MakeNode(0, '<', $1, $3, 0); }
+		|	exp 'g' exp	{ $$ = MakeNode(0, 'g', $1, $3, 0); }
+		|	exp 'l' exp	{ $$ = MakeNode(0, 'l', $1, $3, 0); }		
+		|	exp TOKEQUAL exp { $$ = MakeNode(0, '=', $1, $3, 0); }
 		|	'(' exp ')' { $$ = $2; }
 %%
