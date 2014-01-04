@@ -32,9 +32,9 @@ int main (int argc, char *argv[]) {
 	struct Node *node;
 }
 
-%token <number> NUMBER ID READ WRITE BREAK EXIT TOKEQUAL IF THEN ELSE ENDIF WHILE DO ENDWHILE;
+%token <number> NUMBER ID READ WRITE BREAK EXIT  IF THEN ELSE ENDIF WHILE DO ENDWHILE;
 
-%type <node> exp Body slist statement;
+%type <node> exp slist statement;
 
 %right TOKEQUAL
 %left '<' '>' 'g' 'l'
@@ -44,7 +44,17 @@ int main (int argc, char *argv[]) {
 %start Program
 %%
 
-Program: Body EXIT BREAK { exit(0); }
+Program: Init Body EXIT BREAK	{
+									fprintf(fp, "HALT");
+									fclose(fp);
+									exit(0);
+								}
+
+Init:	{
+			remove("sim.txt");
+			fp = fopen("sim.txt", "w");
+			fprintf(fp, "START\n");
+		}
 
 Body: slist { Evaluate($1); }
 
@@ -60,11 +70,11 @@ statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0); }
 
 exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0); }
 		|	ID	{ $$ = MakeNode($1, 'v', 0, 0, 0); }
-		|	exp '+' exp	{ $$ = MakeNode(0, '+', $1, $3, 0); }
-		|	exp '-' exp	{ $$ = MakeNode(0, '-', $1, $3, 0); }
-		|	exp '*' exp	{ $$ = MakeNode(0, '*', $1, $3, 0); }
-		|	exp '/' exp	{ $$ = MakeNode(0, '/', $1, $3, 0); }
-		|	exp '%' exp	{ $$ = MakeNode(0, '%', $1, $3, 0); }
+		|	exp '+' exp	{ $$ = MakeNode('+', 'a', $1, $3, 0); }
+		|	exp '-' exp	{ $$ = MakeNode('-', 'a', $1, $3, 0); }
+		|	exp '*' exp	{ $$ = MakeNode('*', 'a', $1, $3, 0); }
+		|	exp '/' exp	{ $$ = MakeNode('/', 'a', $1, $3, 0); }
+		|	exp '%' exp	{ $$ = MakeNode('%', 'a', $1, $3, 0); }
 		|	exp '>' exp	{ $$ = MakeNode(0, '>', $1, $3, 0); }
 		|	exp '<' exp	{ $$ = MakeNode(0, '<', $1, $3, 0); }
 		|	exp 'g' exp	{ $$ = MakeNode(0, 'g', $1, $3, 0); }
