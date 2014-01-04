@@ -15,9 +15,15 @@ int yywrap()
 }
 
 
-main()
-{
-	yyparse();
+int main (int argc, char *argv[]) {
+	extern FILE * yyin;
+	yyin = fopen(argv[1],"r");
+	if (yyin) yyparse();
+	else {
+		yyin = fopen("input.txt","r");
+		if (yyin) yyparse();
+		else printf("Could not open file\n");
+	}
 }
 %}
 
