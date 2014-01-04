@@ -75,10 +75,10 @@ exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0); }
 		|	exp '*' exp	{ $$ = MakeNode('*', 'a', $1, $3, 0); }
 		|	exp '/' exp	{ $$ = MakeNode('/', 'a', $1, $3, 0); }
 		|	exp '%' exp	{ $$ = MakeNode('%', 'a', $1, $3, 0); }
-		|	exp '>' exp	{ $$ = MakeNode(0, '>', $1, $3, 0); }
-		|	exp '<' exp	{ $$ = MakeNode(0, '<', $1, $3, 0); }
-		|	exp 'g' exp	{ $$ = MakeNode(0, 'g', $1, $3, 0); }
-		|	exp 'l' exp	{ $$ = MakeNode(0, 'l', $1, $3, 0); }		
-		|	exp TOKEQUAL exp { $$ = MakeNode(0, '=', $1, $3, 0); }
+		|	exp '>' exp	{ $$ = MakeNode('>', 'r', $1, $3, 0); }
+		|	exp '<' exp	{ $$ = MakeNode('<', 'r', $1, $3, 0); }
+		|	exp 'g' exp	{ $$ = MakeNode('g', 'r', $1, $3, 0); }
+		|	exp 'l' exp	{ $$ = MakeNode('l', 'r', $1, $3, 0); }		
+		|	exp TOKEQUAL exp { $$ = MakeNode('=', 'r', $1, $3, 0); }
 		|	'(' exp ')' { $$ = $2; }
 %%

@@ -43,11 +43,27 @@ int Evaluate(struct Node *T) {
 					fprintf(fp, "MOD R%d, R%d\n", tmp2, --RCount);
 					return tmp1 % tmp3;
 			}
-		case '>': return Evaluate(T->t1) > Evaluate(T->t2);
-		case '<': return Evaluate(T->t1) < Evaluate(T->t2);
-		case '=': return Evaluate(T->t1) == Evaluate(T->t2);
-		case 'g': return Evaluate(T->t1) >= Evaluate(T->t2);
-		case 'l': return Evaluate(T->t1) <= Evaluate(T->t2);
+		case 'r':
+			tmp1 = Evaluate(T->t1);
+			tmp2 = RCount - 1;
+			tmp3 = Evaluate(T->t2);
+			switch (T->value) {
+				case '>':
+					fprintf(fp, "GT R%d, R%d\n", tmp2, --RCount);
+					return (tmp1 > tmp3);
+				case '<':
+					fprintf(fp, "LT R%d, R%d\n", tmp2, --RCount);
+					return (tmp1 < tmp3);
+				case '=':
+					fprintf(fp, "EQ R%d, R%d\n", tmp2, --RCount);
+					return (tmp1 == tmp3);
+				case 'g':
+					fprintf(fp, "GE R%d, R%d\n", tmp2, --RCount);
+					return (tmp1 >= tmp3);
+				case 'l':
+					fprintf(fp, "LE R%d, R%d\n", tmp2, --RCount);
+					return (tmp1 <= tmp3);
+			}
 		case 'R':
 			printf("? %c = ", T->value);
 			scanf("%d", &Variable[T->value - 'a']);
