@@ -54,6 +54,7 @@ Init:	{
 			remove("sim.txt");
 			fp = fopen("sim.txt", "w");
 			fprintf(fp, "START\n");
+			fprintf(fp, "MOV SP, BP\n");
 		}
 
 Body: slist { Parse($1); }

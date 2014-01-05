@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-int Variable[26], RCount = 0, BCount = 0;
+int Variable[26], RCount = 0, BCount = 0, SP = 0, BP = 0;
 FILE * fp;
 
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3) {
@@ -21,7 +21,13 @@ void Parse(struct Node *T) {
 		case 'i':
 			fprintf(fp, "MOV R%d, %d\n", RCount++, T->value);
 			break;
-		case 'v': break;
+		case 'v':
+			fprintf(fp, "MOV R%d, %d\n", RCount, T->value - 'a');
+			fprintf(fp, "MOV R%d, BP\n", RCount + 1);
+			fprintf(fp, "ADD R%d, R%d\n", RCount, RCount + 1);
+			fprintf(fp, "MOV R%d, [R%d]\n", RCount, RCount);
+			++RCount;
+			break;		
 		case 'a':
 			Parse(T->t1);
 			tmp2 = RCount - 1;
@@ -67,13 +73,24 @@ void Parse(struct Node *T) {
 			}
 			break;
 		case 'R':
+			fprintf(fp, "IN R%d\n", RCount);
+			fprintf(fp, "MOV R%d, %d\n", RCount + 1, T->value - 'a');
+			fprintf(fp, "MOV R%d, BP\n", RCount + 2);			
+			fprintf(fp, "ADD R%d, R%d\n", RCount + 1, RCount + 2);
+			fprintf(fp, "MOV [R%d], R%d\n", RCount + 1, RCount);
 			break;
 		case 'W':
 			Parse(T->t1);
 			fprintf(fp, "OUT R%d\n", --RCount);
 			break;
 		case 'A':
-			break;
+			Parse(T->t1);
+			fprintf(fp, "MOV R%d, %d\n", RCount, T->value - 'a');
+			fprintf(fp, "MOV R%d, BP\n", RCount + 1);			
+			fprintf(fp, "ADD R%d, R%d\n", RCount, RCount + 1);
+			fprintf(fp, "MOV [R%d], R%d\n", RCount, RCount - 1);
+			RCount -= 1;
+			break;		
 		case 'S':
 			if (T->t2) Parse(T->t2);
 			if (T->t1) Parse(T->t1);
