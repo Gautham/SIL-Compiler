@@ -56,7 +56,7 @@ Init:	{
 			fprintf(fp, "START\n");
 		}
 
-Body: slist { Evaluate($1); }
+Body: slist { Parse($1); }
 
 slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $2, $1, 0); }
 		|	statement BREAK { $$ = $1; }

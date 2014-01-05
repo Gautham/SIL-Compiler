@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-int Variable[26], RCount = 0;
+int Variable[26], RCount = 0, BCount = 0;
 FILE * fp;
 
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3) {
@@ -13,6 +13,86 @@ struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, str
 	t->t2 = t2;
 	t->t3 = t3;
 	return t;
+}
+
+void Parse(struct Node *T) {
+	int tmp1, tmp2, tmp3;
+	switch (T->type) {
+		case 'i':
+			fprintf(fp, "MOV R%d, %d\n", RCount++, T->value);
+			break;
+		case 'v': break;
+		case 'a':
+			Parse(T->t1);
+			tmp2 = RCount - 1;
+			Parse(T->t2);
+			switch (T->value) {
+				case '+':
+					fprintf(fp, "ADD R%d, R%d\n", tmp2, --RCount);
+					break;
+				case '-':
+					fprintf(fp, "SUB R%d, R%d\n", tmp2, --RCount);
+					break;
+				case '*':
+					fprintf(fp, "MUL R%d, R%d\n", tmp2, --RCount);
+					break;
+				case '/':
+					fprintf(fp, "DIV R%d, R%d\n", tmp2, --RCount);
+					break;
+				case '%':
+					fprintf(fp, "MOD R%d, R%d\n", tmp2, --RCount);
+					break;
+			}
+			break;
+		case 'r':
+			Parse(T->t1);
+			tmp2 = RCount - 1;
+			Parse(T->t2);
+			switch (T->value) {
+				case '>':
+					fprintf(fp, "GT R%d, R%d\n", tmp2, --RCount);
+					break;
+				case '<':
+					fprintf(fp, "LT R%d, R%d\n", tmp2, --RCount);
+					break;
+				case '=':
+					fprintf(fp, "EQ R%d, R%d\n", tmp2, --RCount);
+					break;
+				case 'g':
+					fprintf(fp, "GE R%d, R%d\n", tmp2, --RCount);
+					break;
+				case 'l':
+					fprintf(fp, "LE R%d, R%d\n", tmp2, --RCount);
+					break;
+			}
+			break;
+		case 'R':
+			break;
+		case 'W':
+			Parse(T->t1);
+			fprintf(fp, "OUT R%d\n", --RCount);
+			break;
+		case 'A':
+			break;
+		case 'S':
+			if (T->t2) Parse(T->t2);
+			if (T->t1) Parse(T->t1);
+			break;
+		case 'C':
+			Parse(T->t1);
+			if (T->t3) fprintf(fp, "JZ R%d, ELSEBL%d\n", --RCount, BCount);
+			else fprintf(fp, "JZ R%d, BL%d\n", --RCount, BCount);
+			Parse(T->t2);
+			fprintf(fp, "JMP BL%d\n", BCount);
+			if (T->t3) {
+				fprintf(fp, "ELSEBL%d:\n", BCount);
+				Parse(T->t3);
+			}
+			fprintf(fp, "BL%d:\n", BCount++);
+			break;
+		case 'L':
+			while (Evaluate(T->t1)) Evaluate(T->t2);
+	}
 }
 
 int Evaluate(struct Node *T) {
@@ -80,7 +160,11 @@ int Evaluate(struct Node *T) {
 			if (T->t1) Evaluate(T->t1);
 			return 1;
 		case 'C':
-			if (Evaluate(T->t1)) Evaluate(T->t2); else if (T->t3) Evaluate(T->t3);
+			tmp1 = Evaluate(T->t1);
+			fprintf(fp, "MOV R%d, 1", RCount--);
+			fprintf(fp, "EQ R%d, R%d", RCount, RCount + 1);
+			fprintf(fp, "JZ R%d, BL%d", RCount, --BCount);
+			if (tmp1) Evaluate(T->t2); else if (T->t3) Evaluate(T->t3);
 			return 1;
 		case 'L':
 			while (Evaluate(T->t1)) Evaluate(T->t2);
