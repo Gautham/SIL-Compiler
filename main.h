@@ -2,20 +2,9 @@
 #include <string.h>
 
 
-int VariableStore[200], RCount = 0, BCount = 0, SP = 0, BP = 0;
+int VariableStore[200], RCount = 0, BCount = 0, SP = 0;
 struct gSymbol * Global = 0;
 FILE * fp;
-
-struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct gSymbol *g) {
-	struct Node *t = malloc(sizeof(struct Node));
-	t->value = value;
-	t->type = type;
-	t->t1 = t1;
-	t->t2 = t2;
-	t->t3 = t3;
-	t->g = g;
-	return t;
-}
 
 void Install(char *Name, int Type, int Size) {
 	struct gSymbol *N = malloc(sizeof(struct gSymbol));
@@ -38,18 +27,38 @@ struct gSymbol *gLookup(char *Name) {
 	return TMP;
 }
 
-/*
+struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct gSymbol *g) {
+	if (type == 'D') {
+		if (!gLookup(g->Name)) Install(g->Name, 1, value);
+		else {
+			printf("Variable Already Defined\n");
+			exit(0);							
+		}
+	}
+	if (g && !gLookup(g->Name)) {
+		printf("Variable Not Defined\n");
+		exit(0);		
+	}
+	struct Node *t = malloc(sizeof(struct Node));
+	t->value = value;
+	t->type = type;
+	t->t1 = t1;
+	t->t2 = t2;
+	t->t3 = t3;
+	t->g = g;
+	return t;
+}
+
 void Parse(struct Node *T) {
 	int tmp1, tmp2, tmp3;
+	struct gSymbol *TMP;
 	switch (T->type) {
 		case 'i':
 			fprintf(fp, "MOV R%d, %d\n", RCount++, T->value);
 			break;
 		case 'v':
-			fprintf(fp, "MOV R%d, %d\n", RCount, T->value - 'a');
-			fprintf(fp, "MOV R%d, BP\n", RCount + 1);
-			fprintf(fp, "ADD R%d, R%d\n", RCount, RCount + 1);
-			fprintf(fp, "MOV R%d, [R%d]\n", RCount, RCount);
+			TMP = gLookup(T->g->Name);
+			fprintf(fp, "MOV R%d, [%d]\n", RCount, TMP->Binding);
 			++RCount;
 			break;		
 		case 'a':
@@ -97,11 +106,9 @@ void Parse(struct Node *T) {
 			}
 			break;
 		case 'R':
+			TMP = gLookup(T->g->Name);
 			fprintf(fp, "IN R%d\n", RCount);
-			fprintf(fp, "MOV R%d, %d\n", RCount + 1, T->value - 'a');
-			fprintf(fp, "MOV R%d, BP\n", RCount + 2);			
-			fprintf(fp, "ADD R%d, R%d\n", RCount + 1, RCount + 2);
-			fprintf(fp, "MOV [R%d], R%d\n", RCount + 1, RCount);
+			fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, RCount);
 			break;
 		case 'W':
 			Parse(T->t1);
@@ -109,11 +116,8 @@ void Parse(struct Node *T) {
 			break;
 		case 'A':
 			Parse(T->t1);
-			fprintf(fp, "MOV R%d, %d\n", RCount, T->value - 'a');
-			fprintf(fp, "MOV R%d, BP\n", RCount + 1);			
-			fprintf(fp, "ADD R%d, R%d\n", RCount, RCount + 1);
-			fprintf(fp, "MOV [R%d], R%d\n", RCount, RCount - 1);
-			RCount -= 1;
+			TMP = gLookup(T->g->Name);
+			fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
 			break;		
 		case 'S':
 			if (T->t2) Parse(T->t2);
@@ -123,14 +127,14 @@ void Parse(struct Node *T) {
 			Parse(T->t1);
 			tmp1 = BCount++;
 			if (T->t3) fprintf(fp, "JZ R%d, ELSEBL%d\n", --RCount, tmp1);
-			else fprintf(fp, "JZ R%d, BL%d\n", --RCount, tmp1);
+			else fprintf(fp, "JZ R%d, ENDBL%d\n", --RCount, tmp1);
 			Parse(T->t2);
-			fprintf(fp, "JMP BL%d\n", tmp1);
+			fprintf(fp, "JMP ENDBL%d\n", tmp1);
 			if (T->t3) {
 				fprintf(fp, "ELSEBL%d:\n", tmp1);
 				Parse(T->t3);
 			}
-			fprintf(fp, "BL%d:\n", tmp1);
+			fprintf(fp, "ENDBL%d:\n", tmp1);
 			break;
 		case 'L':
 			tmp1 = BCount++;
@@ -143,7 +147,6 @@ void Parse(struct Node *T) {
 			break;
 	}
 }
-*/
 
 int Evaluate(struct Node *T) {
 	int tmp1, tmp2, tmp3;
@@ -152,9 +155,7 @@ int Evaluate(struct Node *T) {
 		case 'i': return T->value;
 		case 'v':
 			TMP = gLookup(T->g->Name);
-			if (!TMP) { printf("Variable Not Declared!"); exit(0); }
 			return VariableStore[TMP->Binding];
-
 		case 'a':
 			tmp1 = Evaluate(T->t1);
 			tmp3 = Evaluate(T->t2);
@@ -174,13 +175,9 @@ int Evaluate(struct Node *T) {
 				case '=': return (tmp1 == tmp3);
 				case 'g': return (tmp1 >= tmp3);
 				case 'l': return (tmp1 <= tmp3);
-			}
-		case 'D':
-			Install(T->g->Name, 1, 1);
-			break;			
+			}		
 		case 'R':
 			TMP = gLookup(T->g->Name);
-			if (!TMP) { printf("Variable Not Declared!"); exit(0); }
 			printf("? %s = ", TMP->Name);
 			scanf("%d", &VariableStore[TMP->Binding]);
 			return 1;
@@ -189,7 +186,6 @@ int Evaluate(struct Node *T) {
 			return 1;
 		case 'A':
 			TMP = gLookup(T->g->Name);
-			if (!TMP) { printf("Variable Not Declared!"); exit(0); }
 			VariableStore[TMP->Binding] = Evaluate(T->t1);
 			return 1;
 		case 'S':

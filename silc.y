@@ -55,16 +55,16 @@ Init:	{
 			remove("sim.txt");
 			fp = fopen("sim.txt", "w");
 			fprintf(fp, "START\n");
-			fprintf(fp, "MOV SP, BP\n");
+			fprintf(fp, "MOV SP, 0\n");
 		}
 
-Body: slist { Evaluate($1); }
+Body: slist { Parse($1); }
 
 slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $2, $1, 0, 0); }
 		|	statement BREAK { $$ = $1; }
 
 statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0, 0); }
-			|	DECLARE ID { $$ = MakeNode(0, 'D', 0, 0, 0, $2); }
+			|	DECLARE ID { $$ = MakeNode(1, 'D', 0, 0, 0, $2); }
 			|	READ '(' ID ')' { $$ = MakeNode(0, 'R', 0, 0, 0, $3); }
 			|	ID '=' exp { $$ = MakeNode(0, 'A', $3, 0, 0, $1); }
 			|	IF '(' exp ')' THEN slist ENDIF { $$ = MakeNode(0, 'C', $3, $6, 0, 0); }
