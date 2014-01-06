@@ -2,19 +2,43 @@
 #include <string.h>
 
 
-int Variable[26], RCount = 0, BCount = 0, SP = 0, BP = 0;
+int VariableStore[200], RCount = 0, BCount = 0, SP = 0, BP = 0;
+struct gSymbol * Global = 0;
 FILE * fp;
 
-struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3) {
+struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct gSymbol *g) {
 	struct Node *t = malloc(sizeof(struct Node));
 	t->value = value;
 	t->type = type;
 	t->t1 = t1;
 	t->t2 = t2;
 	t->t3 = t3;
+	t->g = g;
 	return t;
 }
 
+void Install(char *Name, int Type, int Size) {
+	struct gSymbol *N = malloc(sizeof(struct gSymbol));
+	N->Name = Name;
+	N->Type = Type;
+	N->Size = Size;
+	N->Binding = SP;
+	SP += Size;
+	N->next = 0;
+	if (Global) {
+		struct gSymbol *TMP = Global;
+		while (TMP->next) TMP = TMP->next;
+		TMP->next = N;
+	} else Global = N;
+}
+
+struct gSymbol *gLookup(char *Name) {
+	struct gSymbol *TMP = Global;
+	while (TMP != 0 && strcmp(TMP->Name, Name) != 0) TMP = TMP->next;
+	return TMP;
+}
+
+/*
 void Parse(struct Node *T) {
 	int tmp1, tmp2, tmp3;
 	switch (T->type) {
@@ -119,12 +143,18 @@ void Parse(struct Node *T) {
 			break;
 	}
 }
+*/
 
 int Evaluate(struct Node *T) {
 	int tmp1, tmp2, tmp3;
+	struct gSymbol *TMP;
 	switch (T->type) {
 		case 'i': return T->value;
-		case 'v': return Variable[T->value - 'a'];
+		case 'v':
+			TMP = gLookup(T->g->Name);
+			if (!TMP) { printf("Variable Not Declared!"); exit(0); }
+			return VariableStore[TMP->Binding];
+
 		case 'a':
 			tmp1 = Evaluate(T->t1);
 			tmp3 = Evaluate(T->t2);
@@ -145,15 +175,22 @@ int Evaluate(struct Node *T) {
 				case 'g': return (tmp1 >= tmp3);
 				case 'l': return (tmp1 <= tmp3);
 			}
+		case 'D':
+			Install(T->g->Name, 1, 1);
+			break;			
 		case 'R':
-			printf("? %c = ", T->value);
-			scanf("%d", &Variable[T->value - 'a']);
+			TMP = gLookup(T->g->Name);
+			if (!TMP) { printf("Variable Not Declared!"); exit(0); }
+			printf("? %s = ", TMP->Name);
+			scanf("%d", &VariableStore[TMP->Binding]);
 			return 1;
 		case 'W':
 			printf("%d\n", Evaluate(T->t1));
 			return 1;
 		case 'A':
-			Variable[T->value - 'a'] = Evaluate(T->t1);
+			TMP = gLookup(T->g->Name);
+			if (!TMP) { printf("Variable Not Declared!"); exit(0); }
+			VariableStore[TMP->Binding] = Evaluate(T->t1);
 			return 1;
 		case 'S':
 			if (T->t2) Evaluate(T->t2);

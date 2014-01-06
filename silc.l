@@ -1,14 +1,14 @@
 %{
 #include <stdio.h>
-#include "tree.h"
+#include <string.h>
+#include "definitions.h"
 #include "silc.tab.h"
-
 %}
 
 %%
 [0-9]+	{ yylval.number = atoi(yytext); return NUMBER; }
-[a-z]	{ yylval.number = (int)yytext[0]; return ID; }
 ;		{ return BREAK; }
+"decl"	{ return DECLARE; }
 "read"	{ return READ; }
 "write"	{ return WRITE; }
 "exit"	{ return EXIT; }
@@ -24,4 +24,5 @@
 ">=" { return 'g'; }
 "<=" { return 'l'; }
 "=="	{ return TOKEQUAL; }
+[a-zA-Z][a-zA-Z0-9]*	{ struct gSymbol *p = malloc(sizeof(struct gSymbol)); p->Name = strdup(yytext); yylval.gSym = p; return ID; }
 %%
