@@ -29,15 +29,37 @@ struct gSymbol *gLookup(char *Name) {
 
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct gSymbol *g) {
 	if (type == 'D') {
-		if (!gLookup(g->Name)) Install(g->Name, 1, value);
-		else {
+		if (!gLookup(g->Name)) {
+			if (value) Install(g->Name, 1, value);
+			else {
+				int t = Evaluate(t1);
+				if (t > 0) Install(g->Name, 1, t);
+				else {
+					printf("Only positive sizes are allowed for arrays.\n");
+					exit(0);							
+				}
+			}
+		} else {
 			printf("Variable Already Defined\n");
 			exit(0);							
 		}
 	}
 	if (g && !gLookup(g->Name)) {
 		printf("Variable Not Defined\n");
-		exit(0);		
+		exit(0);
+	}
+	switch (type) {
+		case 'v':
+		case 'A':
+		case 'R':
+			if (t1) {
+				int t = Evaluate(t1);
+				struct gSymbol *TMP = gLookup(g->Name);
+				if (t >= TMP->Size) {
+					printf("Array Index Out Of Bounds\n");
+					exit(0);
+				}
+			}
 	}
 	struct Node *t = malloc(sizeof(struct Node));
 	t->value = value;
@@ -57,9 +79,13 @@ void Parse(struct Node *T) {
 			fprintf(fp, "MOV R%d, %d\n", RCount++, T->value);
 			break;
 		case 'v':
-			TMP = gLookup(T->g->Name);
-			fprintf(fp, "MOV R%d, [%d]\n", RCount, TMP->Binding);
-			++RCount;
+			TMP = gLookup(T->g->Name);			
+			if (T->t1) {
+				Parse(T->t1);
+				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
+				fprintf(fp, "MOV R%d, [R%d]\n", RCount - 1, RCount - 1);
+			} else fprintf(fp, "MOV R%d, [%d]\n", RCount++, TMP->Binding);
 			break;		
 		case 'a':
 			Parse(T->t1);
@@ -107,17 +133,29 @@ void Parse(struct Node *T) {
 			break;
 		case 'R':
 			TMP = gLookup(T->g->Name);
-			fprintf(fp, "IN R%d\n", RCount);
-			fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, RCount);
+			fprintf(fp, "IN R%d\n", RCount++);
+			if (T->t1) {
+				Parse(T->t1);
+				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
+				fprintf(fp, "MOV [R%d], R%d\n", RCount - 1, RCount - 2);
+				RCount -= 2;
+			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
 			break;
 		case 'W':
 			Parse(T->t1);
 			fprintf(fp, "OUT R%d\n", --RCount);
 			break;
 		case 'A':
-			Parse(T->t1);
+			Parse(T->t2);
 			TMP = gLookup(T->g->Name);
-			fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
+			if (T->t1) {
+				Parse(T->t1);
+				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);				
+				fprintf(fp, "MOV [R%d], R%d\n", RCount - 1, RCount - 2);
+				RCount -= 2;
+			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
 			break;		
 		case 'S':
 			if (T->t2) Parse(T->t2);
@@ -155,7 +193,13 @@ int Evaluate(struct Node *T) {
 		case 'i': return T->value;
 		case 'v':
 			TMP = gLookup(T->g->Name);
-			return VariableStore[TMP->Binding];
+			tmp1 = 0;
+			if (T->t1) tmp1 = Evaluate(T->t1);
+			if (tmp1 >= TMP->Size) {
+				printf("Array Index Out Of Bounds\n");
+				exit(0);
+			}
+			return VariableStore[tmp1 + TMP->Binding];
 		case 'a':
 			tmp1 = Evaluate(T->t1);
 			tmp3 = Evaluate(T->t2);
@@ -179,14 +223,26 @@ int Evaluate(struct Node *T) {
 		case 'R':
 			TMP = gLookup(T->g->Name);
 			printf("? %s = ", TMP->Name);
-			scanf("%d", &VariableStore[TMP->Binding]);
+			tmp1 = 0;
+			if (T->t1) tmp1 = Evaluate(T->t1);
+			if (tmp1 >= TMP->Size) {
+				printf("Array Index Out Of Bounds\n");
+				exit(0);
+			}
+			scanf("%d", &VariableStore[tmp1 + TMP->Binding]);
 			return 1;
 		case 'W':
 			printf("%d\n", Evaluate(T->t1));
 			return 1;
 		case 'A':
 			TMP = gLookup(T->g->Name);
-			VariableStore[TMP->Binding] = Evaluate(T->t1);
+			tmp1 = 0;
+			if (T->t1) tmp1 = Evaluate(T->t1);			
+			if (tmp1 >= TMP->Size) {
+				printf("Array Index Out Of Bounds\n");
+				exit(0);
+			}
+			VariableStore[tmp1 + TMP->Binding] = Evaluate(T->t2);
 			return 1;
 		case 'S':
 			if (T->t2) Evaluate(T->t2);

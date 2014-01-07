@@ -21,6 +21,7 @@
 "endwhile"	{ return ENDWHILE; }
 [ \t\n]+ ;
 [+\-*/%()=<>] { return (int)yytext[0]; }
+[\[\]]	{ return (int)yytext[0]; }
 ">=" { return 'g'; }
 "<=" { return 'l'; }
 "=="	{ return TOKEQUAL; }

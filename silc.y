@@ -58,21 +58,27 @@ Init:	{
 			fprintf(fp, "MOV SP, 0\n");
 		}
 
-Body: slist { Parse($1); }
+Body: dlist slist { Evaluate($2); }
+
+dlist:	dlist DECLARE ID BREAK { MakeNode(1, 'D', 0, 0, 0, $3); }
+		|	dlist DECLARE ID '[' exp ']' BREAK { MakeNode(0, 'D', $5, 0, 0, $3); }
+		|	;
 
 slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $2, $1, 0, 0); }
 		|	statement BREAK { $$ = $1; }
 
 statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0, 0); }
-			|	DECLARE ID { $$ = MakeNode(1, 'D', 0, 0, 0, $2); }
 			|	READ '(' ID ')' { $$ = MakeNode(0, 'R', 0, 0, 0, $3); }
-			|	ID '=' exp { $$ = MakeNode(0, 'A', $3, 0, 0, $1); }
+			|	READ '(' ID '[' exp ']' ')' { $$ = MakeNode(0, 'R', $5, 0, 0, $3); }
+			|	ID '=' exp { $$ = MakeNode(0, 'A', 0, $3, 0, $1); }
+			|	ID '[' exp ']' '=' exp { $$ = MakeNode(0, 'A', $3, $6, 0, $1); }			
 			|	IF '(' exp ')' THEN slist ENDIF { $$ = MakeNode(0, 'C', $3, $6, 0, 0); }
 			|	IF '(' exp ')' THEN slist ELSE slist ENDIF { $$ = MakeNode(0, 'C', $3, $6, $8, 0); }
 			|	WHILE '(' exp ')' DO slist ENDWHILE { $$ = MakeNode(0, 'L', $3, $6, 0, 0); }
 
 exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0, 0); }
 		|	ID	{ $$ = MakeNode(0, 'v', 0, 0, 0, $1); }
+		|	ID '[' exp ']'	{ $$ = MakeNode(0, 'v', $3, 0, 0, $1); }		
 		|	exp '+' exp	{ $$ = MakeNode('+', 'a', $1, $3, 0, 0); }
 		|	exp '-' exp	{ $$ = MakeNode('-', 'a', $1, $3, 0, 0); }
 		|	exp '*' exp	{ $$ = MakeNode('*', 'a', $1, $3, 0, 0); }
