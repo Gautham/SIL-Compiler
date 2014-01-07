@@ -158,8 +158,8 @@ void Parse(struct Node *T) {
 			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
 			break;		
 		case 'S':
-			if (T->t2) Parse(T->t2);
 			if (T->t1) Parse(T->t1);
+			if (T->t2) Parse(T->t2);
 			break;
 		case 'C':
 			Parse(T->t1);
@@ -245,8 +245,8 @@ int Evaluate(struct Node *T) {
 			VariableStore[tmp1 + TMP->Binding] = Evaluate(T->t2);
 			return 1;
 		case 'S':
-			if (T->t2) Evaluate(T->t2);
 			if (T->t1) Evaluate(T->t1);
+			if (T->t2) Evaluate(T->t2);
 			return 1;
 		case 'C':
 			if (Evaluate(T->t1)) Evaluate(T->t2); else if (T->t3) Evaluate(T->t3);

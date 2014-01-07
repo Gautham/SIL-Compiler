@@ -58,13 +58,13 @@ Init:	{
 			fprintf(fp, "MOV SP, 0\n");
 		}
 
-Body: dlist slist { Evaluate($2); }
+Body: dlist slist { Parse($2); }
 
 dlist:	dlist DECLARE ID BREAK { MakeNode(1, 'D', 0, 0, 0, $3); }
 		|	dlist DECLARE ID '[' exp ']' BREAK { MakeNode(0, 'D', $5, 0, 0, $3); }
 		|	;
 
-slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $2, $1, 0, 0); }
+slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $1, $2, 0, 0); }
 		|	statement BREAK { $$ = $1; }
 
 statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0, 0); }
