@@ -25,5 +25,5 @@
 ">=" { return 'g'; }
 "<=" { return 'l'; }
 "=="	{ return TOKEQUAL; }
-[a-zA-Z][a-zA-Z0-9]*	{ struct gSymbol *p = malloc(sizeof(struct gSymbol)); p->Name = strdup(yytext); yylval.gSym = p; return ID; }
+[a-zA-Z][a-zA-Z0-9]*	{ struct Symbol *p = malloc(sizeof(struct Symbol)); p->Name = strdup(yytext); yylval.Symbol = p; return ID; }
 %%

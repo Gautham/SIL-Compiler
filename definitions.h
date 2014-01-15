@@ -1,11 +1,11 @@
-struct gSymbol {
+struct Symbol {
 	char *Name;
 	int Type, Size, Binding;
-	struct gSymbol *next;
+	struct Symbol *next, *parent;
 };
 
 struct Node {
 	int value, type;
 	struct Node *t1, *t2, *t3;
-	struct gSymbol *g;
+	struct Symbol *g, *h;
 };
