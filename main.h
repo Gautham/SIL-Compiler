@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-int VariableStore[200], RCount = 0, BCount = 0, MemCount = 0;
+int VariableStore[200], RCount = 0, BCount = 0, MemCount = 0, DeclType;
 struct Symbol *TopScope = 0;
 FILE * fp;
 
@@ -31,15 +31,15 @@ struct Symbol *Lookup(char *Name, int isRecursive) {
 	return 0;
 }
 
-void InstallVariable(struct Symbol *T, int type, int size, struct Node *sizeExp) {
+void InstallVariable(struct Symbol *T, int size, struct Node *sizeExp) {
 	if (Lookup(T->Name, 0)) {
 		printf("Variable \"%s\" was priorly declared within the present Scope.\n", T->Name);
 		exit(0);
 	}
-	if (size) Install(T->Name, type, size);
+	if (size) Install(T->Name, DeclType, size);
 	else {
 		int t = Evaluate(sizeExp);
-		if (t > 0) Install(T->Name, type, t);
+		if (t > 0) Install(T->Name, DeclType, t);
 		else printf("Only +ve Sizes are allowed for Array Dimensions.\n");
 	}
 }
@@ -53,11 +53,45 @@ struct Symbol *NewScope() {
 }
 
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct Symbol *g, struct Symbol *h) {
+	struct Symbol *F;
 	switch (type) {
-		case 'R': case 'A': case 'v':
+		case 'A':
+			F = Lookup(g->Name, 1);
+			if (!F) {
+				printf("Variable \"%s\" was not declared.\n", g->Name);
+				exit(0);
+			}
+			if ((t2->type == 'r' || t2->type == 'l' || t2->type == 'b') && F->Type == 1) {
+				printf("Assignment Of Boolean Value to Integer Variable is not permitted.\n");
+				exit(0);
+			} else if ((t2->type != 'r' && t2->type != 'l' && t2->type != 'b') && F->Type == 2) {
+				printf("Assignment Of Integer Value to Boolean Variable is not permitted.\n");
+				exit(0);
+			}
+			break;
+		case 'R': case 'v':
 			if (!Lookup(g->Name, 1)) {
 				printf("Variable \"%s\" was not declared.\n", g->Name);
 				exit(0);
+			}
+			break;
+		case 'r':
+		case 'a':		
+			if (t1->type == 'r' || t2->type == 'r' || t1->type == 'l' || t2->type == 'l' || t1->type == 'b' || t2->type == 'b') {
+				printf("Usage Of Boolean Operands for Expression is prohibited.\n");
+				exit(0);	
+			}
+			break;
+		case 'l':
+			if (t1->type != 'l' && t1->type != 'r' && t1->type != 'b') {
+				printf("Usage Of Arithmetic Expression for Logical Operation is prohibited.\n");
+				exit(0);
+			}
+			if (value != 'n') {
+				if (t2->type != 'l' && t2->type != 'r' && t2->type != 'b') {
+					printf("Usage Of Arithmetic Expression for Logical Operation is prohibited.\n");
+					exit(0);
+				}
 			}
 	}
 	struct Node *t = malloc(sizeof(struct Node));
@@ -75,6 +109,7 @@ void Parse(struct Node *T) {
 	int tmp1, tmp2, tmp3;
 	struct Symbol *TMP;
 	switch (T->type) {
+		case 'b':
 		case 'i':
 			fprintf(fp, "MOV R%d, %d\n", RCount++, T->value);
 			break;
@@ -128,6 +163,26 @@ void Parse(struct Node *T) {
 					break;
 				case 'l':
 					fprintf(fp, "LE R%d, R%d\n", tmp2, --RCount);
+					break;
+			}
+			break;
+		case 'l':
+			Parse(T->t1);
+			tmp2 = RCount - 1;
+			switch(T->value) {
+				case 'a':
+					Parse(T->t2);
+					fprintf(fp, "MUL R%d, R%d\n", tmp2, --RCount);
+					break;
+				case 'o':
+					Parse(T->t2);
+					fprintf(fp, "ADD R%d, R%d\n", tmp2, --RCount);					
+					fprintf(fp, "MOV R%d, 0\n", RCount);
+					fprintf(fp, "NE R%d, R%d\n", tmp2, RCount);
+					break;
+				case 'n':
+					fprintf(fp, "MOV R%d, 0\n", RCount);
+					fprintf(fp, "EQ R%d, R%d\n", tmp2, RCount);	
 					break;
 			}
 			break;
@@ -195,6 +250,7 @@ int Evaluate(struct Node *T) {
 	int tmp1, tmp2, tmp3;
 	struct Symbol *TMP;
 	switch (T->type) {
+		case 'b':		
 		case 'i': return T->value;
 		case 'v':
 			TMP = Lookup(T->g->Name, 1);
@@ -224,7 +280,14 @@ int Evaluate(struct Node *T) {
 				case '=': return (tmp1 == tmp3);
 				case 'g': return (tmp1 >= tmp3);
 				case 'l': return (tmp1 <= tmp3);
-			}		
+			}
+		case 'l':
+			tmp1 = Evaluate(T->t1);
+			switch (T->value) {
+				case 'a': return (tmp1 && Evaluate(T->t2));
+				case 'o': return (tmp1 || Evaluate(T->t2));
+				case 'n': return !(tmp1);				
+			}
 		case 'R':
 			TMP = Lookup(T->g->Name, 1);
 			printf("? %s = ", TMP->Name);

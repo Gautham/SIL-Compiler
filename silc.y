@@ -33,11 +33,19 @@ int main (int argc, char *argv[]) {
 	struct Node *node;
 }
 
-%token <number> NUMBER READ WRITE BREAK EXIT  IF THEN ELSE ENDIF WHILE DO ENDWHILE DECLARE;
+%token <number> NUMBER READ WRITE BREAK EXIT;
+%token <number> IF THEN ELSE ENDIF WHILE DO ENDWHILE;
+%token <number> DECL ENDDECL INTEGER BOOLEAN COMMA;
+%token <number> AND OR NOT;
+%token <number> TRUE FALSE;
+
+
 %token <Symbol> ID;
 %type <node> exp slist statement;
 %type <Symbol> NewScope InitNewScope;
 
+%left NOT
+%left AND OR
 %right TOKEQUAL
 %left '<' '>' 'g' 'l'
 %left '+' '-'
@@ -60,15 +68,29 @@ Init:	{
 
 Body: NewScope slist { TopScope = $1; Parse($2); }
 
-NewScope:	InitNewScope dlist { $$ = $1; }
+NewScope:	InitNewScope DeclarationBody { $$ = $1; }
 
 InitNewScope:	{ $$ = NewScope(); }
 
 EndNewScope: { TopScope = TopScope->parent; }
 
-dlist:	dlist DECLARE ID BREAK { InstallVariable($3, 1, 1, 0); }
-		|	dlist DECLARE ID '[' exp ']' BREAK { InstallVariable($3, 1, 0, $5); }
-		|	;
+DeclarationBody:	DECL Declarations ENDDECL { ; }
+					|	;
+
+Declarations:	Declarations INTEGER TypeInt DEFLIST BREAK
+				|	Declarations BOOLEAN TypeBool DEFLIST BREAK
+				|	;
+
+TypeInt:	{ DeclType = 1; }
+
+TypeBool:	{ DeclType = 2; }
+
+
+
+DEFLIST:	DEFLIST COMMA ID { InstallVariable($3, 1, 0); }
+			|	ID { InstallVariable($1, 1, 0); }
+			|	DEFLIST COMMA ID '[' exp ']' { InstallVariable($3, 0, $5); }
+			|	ID '[' exp ']' { InstallVariable($1, 0, $3); }
 
 slist:	slist statement BREAK { $$ = MakeNode(0, 'S', $1, $2, 0, 0, 0); }
 		|	statement BREAK { $$ = $1; }
@@ -95,5 +117,10 @@ exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0, 0, 0); }
 		|	exp 'g' exp	{ $$ = MakeNode('g', 'r', $1, $3, 0, 0, 0); }
 		|	exp 'l' exp	{ $$ = MakeNode('l', 'r', $1, $3, 0, 0, 0); }		
 		|	exp TOKEQUAL exp { $$ = MakeNode('=', 'r', $1, $3, 0, 0, 0); }
+		|	exp AND exp	{ $$ = MakeNode('a', 'l', $1, $3, 0, 0, 0); }		
+		|	exp OR exp	{ $$ = MakeNode('o', 'l', $1, $3, 0, 0, 0); }		
+		|	NOT exp	{ $$ = MakeNode('n', 'l', $2, 0, 0, 0, 0); }
 		|	'(' exp ')' { $$ = $2; }
+		|	TRUE	{ $$ = MakeNode(1, 'b', 0, 0, 0, 0, 0); }
+		|	FALSE	{ $$ = MakeNode(0, 'b', 0, 0, 0, 0, 0); }
 %%

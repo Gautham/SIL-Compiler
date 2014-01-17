@@ -8,7 +8,10 @@
 %%
 [0-9]+	{ yylval.number = atoi(yytext); return NUMBER; }
 ;		{ return BREAK; }
-"decl"	{ return DECLARE; }
+"decl"	{ return DECL; }
+"enddecl"	{ return ENDDECL; }
+"integer"	{ return INTEGER; }
+"boolean"	{ return BOOLEAN; }
 "read"	{ return READ; }
 "write"	{ return WRITE; }
 "exit"	{ return EXIT; }
@@ -19,11 +22,18 @@
 "while"	{ return WHILE; }
 "do"	{ return DO; }
 "endwhile"	{ return ENDWHILE; }
+"AND"	{ return AND; }
+"OR"	{ return OR; }
+"NOT"	{ return NOT; }
+"TRUE"	{ return TRUE; }
+"FALSE"	{ return FALSE; }
+
 [ \t\n]+ ;
 [+\-*/%()=<>] { return (int)yytext[0]; }
 [\[\]]	{ return (int)yytext[0]; }
 ">=" { return 'g'; }
 "<=" { return 'l'; }
 "=="	{ return TOKEQUAL; }
+","	{	return COMMA; }
 [a-zA-Z][a-zA-Z0-9]*	{ struct Symbol *p = malloc(sizeof(struct Symbol)); p->Name = strdup(yytext); yylval.Symbol = p; return ID; }
 %%
