@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-int VariableStore[200], RCount = 0, BCount = 0, MemCount = 0, DeclType;
+int VariableStore[200], RCount = 0, BCount = 0, SP = 0, DeclType;
 struct Symbol *TopScope = 0;
 FILE * fp;
 
@@ -11,8 +11,9 @@ void Install(char *Name, int Type, int Size) {
 	N->Name = Name;
 	N->Type = Type;
 	N->Size = Size;
-	N->Binding = MemCount;
-	MemCount += Size;
+	N->BP = TopScope->BP;
+	N->Binding = SP - N->BP;
+	SP += Size;
 	N->next = 0;
 	N->parent = TopScope->parent;
 	struct Symbol *P = TopScope;
@@ -46,6 +47,7 @@ void InstallVariable(struct Symbol *T, int size, struct Node *sizeExp) {
 
 struct Symbol *NewScope() {
 	struct Symbol *g = malloc(sizeof(struct Symbol));
+	g->BP = g->Binding = SP;
 	g->parent = TopScope;
 	g->next = 0;
 	TopScope = g;
@@ -117,10 +119,10 @@ void Parse(struct Node *T) {
 			TMP = Lookup(T->g->Name, 1);			
 			if (T->t1) {
 				Parse(T->t1);
-				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding + TMP->BP);
 				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
 				fprintf(fp, "MOV R%d, [R%d]\n", RCount - 1, RCount - 1);
-			} else fprintf(fp, "MOV R%d, [%d]\n", RCount++, TMP->Binding);
+			} else fprintf(fp, "MOV R%d, [%d]\n", RCount++, TMP->Binding + TMP->BP);
 			break;		
 		case 'a':
 			Parse(T->t1);
@@ -191,11 +193,11 @@ void Parse(struct Node *T) {
 			fprintf(fp, "IN R%d\n", RCount++);
 			if (T->t1) {
 				Parse(T->t1);
-				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding + TMP->BP);
 				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
 				fprintf(fp, "MOV [R%d], R%d\n", RCount - 1, RCount - 2);
 				RCount -= 2;
-			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
+			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding + TMP->BP, --RCount);
 			break;
 		case 'W':
 			Parse(T->t1);
@@ -206,11 +208,11 @@ void Parse(struct Node *T) {
 			TMP = Lookup(T->g->Name, 1);
 			if (T->t1) {
 				Parse(T->t1);
-				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding + TMP->BP);
 				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);				
 				fprintf(fp, "MOV [R%d], R%d\n", RCount - 1, RCount - 2);
 				RCount -= 2;
-			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding, --RCount);
+			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding + TMP->BP, --RCount);
 			break;		
 		case 'S':
 			if (T->t1) Parse(T->t1);
@@ -260,7 +262,7 @@ int Evaluate(struct Node *T) {
 				printf("Array Index Out Of Bounds\n");
 				exit(0);
 			}
-			return VariableStore[tmp1 + TMP->Binding];
+			return VariableStore[tmp1 + TMP->Binding + TMP->BP];
 		case 'a':
 			tmp1 = Evaluate(T->t1);
 			tmp3 = Evaluate(T->t2);
@@ -297,7 +299,7 @@ int Evaluate(struct Node *T) {
 				printf("Array Index Out Of Bounds\n");
 				exit(0);
 			}
-			scanf("%d", &VariableStore[tmp1 + TMP->Binding]);
+			scanf("%d", &VariableStore[tmp1 + TMP->Binding + TMP->BP]);
 			return 1;
 		case 'W':
 			printf("%d\n", Evaluate(T->t1));
@@ -310,7 +312,7 @@ int Evaluate(struct Node *T) {
 				printf("Array Index Out Of Bounds\n");
 				exit(0);
 			}
-			VariableStore[tmp1 + TMP->Binding] = Evaluate(T->t2);
+			VariableStore[tmp1 + TMP->Binding + TMP->BP] = Evaluate(T->t2);
 			return 1;
 		case 'S':
 			if (T->t1) Evaluate(T->t1);

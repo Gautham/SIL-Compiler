@@ -1,6 +1,6 @@
 struct Symbol {
 	char *Name;
-	int Type, Size, Binding;
+	int Type, Size, BP, Binding;
 	struct Symbol *next, *parent;
 };
 
