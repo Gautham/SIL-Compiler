@@ -1,7 +1,7 @@
 struct Symbol {
 	char *Name;
 	int Type, Size, BP, Binding;
-	struct Symbol *next, *parent;
+	struct Symbol *next, *parent, *ArgList, *Scope;
 };
 
 struct Node {

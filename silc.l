@@ -10,10 +10,12 @@
 ;		{ return BREAK; }
 "decl"	{ return DECL; }
 "enddecl"	{ return ENDDECL; }
+"main()" { return MAIN; }
 "integer"	{ return INTEGER; }
 "boolean"	{ return BOOLEAN; }
 "read"	{ return READ; }
 "write"	{ return WRITE; }
+"return" { return RETURN; }
 "exit"	{ return EXIT; }
 "if"	{ return IF; }
 "then"	{ return THEN; }
@@ -31,6 +33,7 @@
 [ \t\n]+ ;
 [+\-*/%()=<>] { return (int)yytext[0]; }
 [\[\]]	{ return (int)yytext[0]; }
+[\{\}]	{ return (int)yytext[0]; }
 ">=" { return 'g'; }
 "<=" { return 'l'; }
 "=="	{ return TOKEQUAL; }

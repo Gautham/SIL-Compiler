@@ -2,8 +2,9 @@
 #include <string.h>
 
 
-int VariableStore[200], RCount = 0, BCount = 0, SP = 0, DeclType;
-struct Symbol *TopScope = 0;
+int VariableStore[200], RCount = 0, BCount = 0, ArgCount = 0, LocalSP = 0, SP = 0, DeclType, FlagMain = 1;
+struct Symbol *TopScope = 0, *Functions = 0, *Arg = 0;
+struct Node *MainFunction = 0;
 FILE * fp;
 
 void Install(char *Name, int Type, int Size) {
@@ -11,10 +12,17 @@ void Install(char *Name, int Type, int Size) {
 	N->Name = Name;
 	N->Type = Type;
 	N->Size = Size;
-	N->BP = TopScope->BP;
-	N->Binding = SP - N->BP;
-	SP += Size;
+	if (TopScope->Type == 'R') {
+		N->Binding = TopScope->Size;
+		TopScope->Size += Size;
+		N->BP = TopScope->BP;
+	}
+	if (TopScope->Type == 'S') {
+		N->Binding = SP;
+		SP += Size;
+	}
 	N->next = 0;
+	N->Scope = TopScope;
 	N->parent = TopScope->parent;
 	struct Symbol *P = TopScope;
 	while (P->next) P = P->next;
@@ -45,9 +53,49 @@ void InstallVariable(struct Symbol *T, int size, struct Node *sizeExp) {
 	}
 }
 
-struct Symbol *NewScope() {
+void *NewArgList() {
+	Arg = malloc(sizeof(struct Symbol));
+	Arg->Type = 'A';
+	Arg->Size = 0;
+	Arg->next = 0;
+	Arg->parent = TopScope;
+	TopScope = Arg;
+}
+
+void InstallArguement(struct Symbol *T, int size, struct Node *sizeExp) {
+	struct Symbol *TMP = Arg, *A = malloc(sizeof(struct Symbol));
+	A->Name = T->Name;
+	A->Type = DeclType;
+	if (!size) A->Size = Evaluate(sizeExp);
+	else A->Size = size;
+	A->parent = TopScope->parent;
+	A->Scope = Arg;
+	A->Binding = TopScope->Size++;
+	while (TMP->next != 0) TMP = TMP->next;
+	TMP->next = A;
+}
+
+void InstallFunction(struct Symbol *T, struct Symbol *Scope) {
+	struct Symbol *N = malloc(sizeof(struct Symbol));
+	N->Name = T->Name;
+	N->Type = T->Type;
+	N->Scope = Scope;
+	Scope->parent = Arg;
+	N->ArgList = Arg;
+	N->next = 0;
+	if (!Functions) Functions = N;
+	else {
+		struct Symbol *P = Functions;
+		while (P->next) P = P->next;
+		P->next = N;
+	}
+}
+
+struct Symbol *NewScope(char type) {
 	struct Symbol *g = malloc(sizeof(struct Symbol));
 	g->BP = g->Binding = SP;
+	g->Size = 0;
+	g->Type = type;
 	g->parent = TopScope;
 	g->next = 0;
 	TopScope = g;
@@ -55,7 +103,7 @@ struct Symbol *NewScope() {
 }
 
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct Symbol *g, struct Symbol *h) {
-	struct Symbol *F;
+	struct Symbol *F, *TMP;
 	switch (type) {
 		case 'A':
 			F = Lookup(g->Name, 1);
@@ -63,12 +111,31 @@ struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, str
 				printf("Variable \"%s\" was not declared.\n", g->Name);
 				exit(0);
 			}
-			if ((t2->type == 'r' || t2->type == 'l' || t2->type == 'b') && F->Type == 1) {
-				printf("Assignment Of Boolean Value to Integer Variable is not permitted.\n");
-				exit(0);
-			} else if ((t2->type != 'r' && t2->type != 'l' && t2->type != 'b') && F->Type == 2) {
-				printf("Assignment Of Integer Value to Boolean Variable is not permitted.\n");
-				exit(0);
+			if (t2->type == 'F') {
+				TMP = Functions;
+				while (TMP && strcmp(TMP->Name, t2->h->Name)) TMP = TMP->next;
+				if (!TMP) {
+					printf("Function \"%s()\" was not declared.\n", t2->h->Name);
+					exit(0);
+				} else {
+					if (TMP->Type == 4 && F->Type == 1) {
+						printf("Assignment Of Boolean Value to Integer Variable \"%s\" is not permitted.\n", F->Name);						
+						exit(0);
+					}
+
+					if (TMP->Type == 3 && F->Type == 2) {
+						printf("Assignment Of Integer Value to Boolean Variable \"%s\" is not permitted.\n", F->Name);						
+						exit(0);
+					}
+				}
+			} else {
+				if ((t2->type == 'r' || t2->type == 'l' || t2->type == 'b') && F->Type == 1) {
+					printf("Assignment Of Boolean Value to Integer Variable \"%s\" is not permitted.\n", F->Name);
+					exit(0);
+				} else if ((t2->type != 'r' && t2->type != 'l' && t2->type != 'b') && F->Type == 2) {
+					printf("Assignment Of Integer Value to Boolean Variable \"%s\" is not permitted.\n", F->Name);
+					exit(0);
+				}				
 			}
 			break;
 		case 'R': case 'v':
@@ -117,12 +184,29 @@ void Parse(struct Node *T) {
 			break;
 		case 'v':
 			TMP = Lookup(T->g->Name, 1);			
+			if (T->t1) Parse(T->t1);
+			switch  (TMP->Scope->Type) {
+				case 'S':	
+					fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+					break;
+				case 'R':
+					fprintf(fp, "MOV R%d, SP\n", RCount);
+					fprintf(fp, "MOV R%d, %d\n", RCount + 1, TMP->Scope->Size - TMP->Binding - 1);
+					fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+					break;
+				case 'A':
+					fprintf(fp, "MOV R%d, BP\n", RCount);
+					fprintf(fp, "MOV R%d, %d\n", RCount + 1, Arg->Size - TMP->Binding  + 1);
+					fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+			}
 			if (T->t1) {
-				Parse(T->t1);
-				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding + TMP->BP);
 				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
 				fprintf(fp, "MOV R%d, [R%d]\n", RCount - 1, RCount - 1);
-			} else fprintf(fp, "MOV R%d, [%d]\n", RCount++, TMP->Binding + TMP->BP);
+			}
+			else {
+				fprintf(fp, "MOV R%d, [R%d]\n", RCount, RCount);
+				++RCount;
+			}
 			break;		
 		case 'a':
 			Parse(T->t1);
@@ -191,13 +275,30 @@ void Parse(struct Node *T) {
 		case 'R':
 			TMP = Lookup(T->g->Name, 1);
 			fprintf(fp, "IN R%d\n", RCount++);
+			if (T->t1) Parse(T->t1);
+			switch  (TMP->Scope->Type) {
+				case 'S':	
+					fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+					break;
+				case 'R':
+					fprintf(fp, "MOV R%d, SP\n", RCount);
+					fprintf(fp, "MOV R%d, %d\n", RCount + 1, TMP->Scope->Size - TMP->Binding - 1);
+					fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+					break;
+				case 'A':
+					fprintf(fp, "MOV R%d, BP\n", RCount);
+					fprintf(fp, "MOV R%d, %d\n", RCount + 1, Arg->Size - TMP->Binding  + 1);
+					fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+			}
 			if (T->t1) {
-				Parse(T->t1);
-				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding + TMP->BP);
 				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
 				fprintf(fp, "MOV [R%d], R%d\n", RCount - 1, RCount - 2);
 				RCount -= 2;
-			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding + TMP->BP, --RCount);
+			}
+			else {
+				fprintf(fp, "MOV [R%d], R%d\n", RCount, RCount - 1);
+				RCount -= 1;
+			}
 			break;
 		case 'W':
 			Parse(T->t1);
@@ -206,13 +307,30 @@ void Parse(struct Node *T) {
 		case 'A':
 			Parse(T->t2);
 			TMP = Lookup(T->g->Name, 1);
+			if (T->t1) Parse(T->t1);
+			switch  (TMP->Scope->Type) {
+				case 'S':	
+					fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding);
+					break;
+				case 'R':
+					fprintf(fp, "MOV R%d, SP\n", RCount);
+					fprintf(fp, "MOV R%d, %d\n", RCount + 1, TMP->Scope->Size - TMP->Binding - 1);
+					fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+					break;
+				case 'A':
+					fprintf(fp, "MOV R%d, BP\n", RCount);
+					fprintf(fp, "MOV R%d, %d\n", RCount + 1, Arg->Size - TMP->Binding  + 1);
+					fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+			}
 			if (T->t1) {
-				Parse(T->t1);
-				fprintf(fp, "MOV R%d, %d\n", RCount, TMP->Binding + TMP->BP);
-				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);				
+				fprintf(fp, "ADD R%d, R%d\n", RCount - 1, RCount);
 				fprintf(fp, "MOV [R%d], R%d\n", RCount - 1, RCount - 2);
 				RCount -= 2;
-			} else fprintf(fp, "MOV [%d], R%d\n", TMP->Binding + TMP->BP, --RCount);
+			}
+			else {
+				fprintf(fp, "MOV [R%d], R%d\n", RCount, RCount - 1);
+				RCount -= 1;
+			}
 			break;		
 		case 'S':
 			if (T->t1) Parse(T->t1);
@@ -244,6 +362,26 @@ void Parse(struct Node *T) {
 			fprintf(fp, "JMP BL%d\n", tmp1);
 			TopScope = TopScope->parent;			
 			fprintf(fp, "ENDBL%d:\n", tmp1);
+			break;
+		case 'F':
+			TMP = Functions;
+			while (TMP && strcmp(TMP->Name, T->h->Name)) TMP = TMP->next;
+			if (TMP) {
+				tmp1 = 0;
+				while (tmp1 < RCount) fprintf(fp, "PUSH R%d\n", tmp1++);
+				fprintf(fp, "PUSH R%d\n", RCount + 1);
+				fprintf(fp, "CALL %s\n", TMP->Name);
+				fprintf(fp, "POP R%d\n", RCount++);
+				fprintf(fp, "MOV R%d, SP\n", RCount);
+				fprintf(fp, "MOV R%d, %d\n", RCount + 1, TMP->ArgList->Size);
+				fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
+				fprintf(fp, "MOV SP, R%d\n", RCount);
+				tmp1 = RCount - 2;
+				while (tmp1 >= 0) fprintf(fp, "POP R%d\n", tmp1--);				
+			} else {
+				printf("Function %s Not Defined.\n", T->h->Name);
+				exit(0);
+			}
 			break;
 	}
 }
