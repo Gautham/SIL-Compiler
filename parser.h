@@ -8,6 +8,7 @@
 void Parse(struct Node *T) {
 	int tmp1, tmp2, tmp3;
 	struct Symbol *TMP;
+	struct Parameters *param;
 	switch (T->type) {
 		case 'b':
 		case 'i':
@@ -199,6 +200,12 @@ void Parse(struct Node *T) {
 			if (TMP) {
 				tmp1 = 0;
 				while (tmp1 < RCount) fprintf(fp, "PUSH R%d\n", tmp1++);
+				param = T->P;
+				while (param != 0) {
+					Parse(param->t);
+					fprintf(fp, "PUSH R%d\n", --RCount);
+					param = param->next;
+				}
 				fprintf(fp, "PUSH R%d\n", RCount + 1);
 				fprintf(fp, "CALL %s\n", TMP->Name);
 				fprintf(fp, "POP R%d\n", RCount++);
@@ -217,6 +224,8 @@ void Parse(struct Node *T) {
 }
 
 void ParseFunction(struct Node * T, struct Symbol *ID, struct Symbol *FunctScope, struct Node * RValue) {
+	FunctScope->parent = TopScope;
+	Arg = TopScope;
 	TopScope = FunctScope;
 	if (!TypeCheck(0, 0, RValue, 0, 0, ID)) {
 		if (ID->Type == 1) printf("Returning Boolean Value from Integer Function \"%s()\" is not permitted.\n", ID->Name);						
@@ -243,4 +252,5 @@ void ParseFunction(struct Node * T, struct Symbol *ID, struct Symbol *FunctScope
 	fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
 	fprintf(fp, "MOV SP, R%d\n", RCount);
 	fprintf(fp, "RET\n");
+	TopScope = TopScope->parent->parent;
 }

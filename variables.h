@@ -45,7 +45,7 @@ void InstallVariable(struct Symbol *T, int size) {
 	}
 }
 
-void *NewArgList() {
+void NewArgList() {
 	Arg = malloc(sizeof(struct Symbol));
 	Arg->Type = 'A';
 	Arg->Size = 0;
@@ -70,6 +70,24 @@ void InstallArguement(struct Symbol *T, int size) {
 	TMP->next = A;
 }
 
+void NewParamList() {
+	if (!FormalParam) FormalParam = malloc(sizeof(struct Symbol)); 
+	FormalParam->next = 0;
+}
+
+void AddParam(struct Symbol *T, int size) {
+	struct Symbol *TMP = FormalParam, *A = malloc(sizeof(struct Symbol));
+	A->Name = T->Name;
+	A->Type = DeclType;
+	if (size > 0) A->Size = size;
+	else {
+		printf("Only +ve Integer Sizes are allowed for Array Dimensions.\n");
+		exit(0);		
+	}
+	while (TMP->next != 0) TMP = TMP->next;
+	TMP->next = A;
+}
+
 struct Symbol *Lookup(char *Name, int isRecursive) {
 	struct Symbol *L = TopScope, *TMP;
 	do {
@@ -81,13 +99,11 @@ struct Symbol *Lookup(char *Name, int isRecursive) {
 	return 0;
 }
 
-void InstallFunction(struct Symbol *T, struct Symbol *Scope) {
+void DeclareFunction(struct Symbol *T, struct Symbol *A) {
 	struct Symbol *N = malloc(sizeof(struct Symbol));
 	N->Name = T->Name;
 	N->Type = T->Type;
-	N->Scope = Scope;
-	Scope->parent = Arg;
-	N->ArgList = Arg;
+	N->ArgList = A;
 	N->next = 0;
 	if (!Functions) Functions = N;
 	else {
@@ -101,6 +117,37 @@ struct Symbol *LookupFunction(char *Name) {
 	struct Symbol *TMP = Functions;
 	while (TMP && strcmp(TMP->Name, Name)) TMP = TMP->next;
 	return TMP;
+}
+
+void CheckParams(struct Symbol * Args) {
+	struct Symbol * P =	FormalParam->next, *Q = Args;
+	int flag = 1;
+	while (P && Q && flag) {
+		if (P->Type != Q->Type) flag = 0;
+		P = P->next;
+		Q = Q->next;
+	}
+	if (!flag || (P || Q)) {
+		printf("Function Declaration & Function Definition have arguement mismatch.\n");
+		exit(0);		
+	}
+}
+
+
+void InstallFunction(struct Symbol *T, struct Symbol *Scope) {
+	struct Symbol *N = LookupFunction(T->Name);
+	if (!N) {
+		printf("Function \"%s()\" was not declared.\n", T->Name);
+		exit(0);
+	}
+	if (N->Type % 2 != T->Type % 2) {
+		printf("Function Declaration & Function Definition of \"%s()\"have type mismatch.\n", N->Name);
+		exit(0);
+	}
+	CheckParams(N->ArgList->next);
+	N->Scope = Scope;
+	Scope->parent = N->ArgList;
+	TopScope = N->ArgList;
 }
 
 int TypeCheck(char a, char b, struct Node * p, struct Node * q, struct Symbol *m, struct Symbol *n) {

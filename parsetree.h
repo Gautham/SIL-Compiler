@@ -1,5 +1,7 @@
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct Symbol *g, struct Symbol *h) {
 	struct Symbol *F, *TMP;
+	struct Parameters *param;
+	int tmp;
 	switch (type) {
 		case 'A':
 			F = Lookup(g->Name, 1);
@@ -46,6 +48,28 @@ struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, str
 				exit(0);
 			}
 			break;
+		case 'F':
+			F = LookupFunction(h->Name);
+			if (!F) {
+				printf("Function \"%s()\" was not declared.\n", h->Name);
+				exit(0);
+			}
+			tmp = 0;
+			TMP = F->ArgList->next;
+			param = Para;
+			while (param && TMP) {
+				if (!TypeCheck(0, 0, param->t, 0, 0, TMP)) {
+					printf("Arguement Mismatch in Call to Function \"%s()\"\n", h->Name);
+					exit(0);
+				}
+				TMP = TMP->next;
+				param = param->next;
+			}
+			if (param || TMP) {
+				printf("Arguement Mismatch in Call to Function \"%s()\"\n", h->Name);
+				exit(0);				
+			}
+			break;
 	}
 	struct Node *t = malloc(sizeof(struct Node));
 	t->value = value;
@@ -55,5 +79,6 @@ struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, str
 	t->t3 = t3;
 	t->g = g;
 	t->h = h;
+	if (type == 'F') t->P = Para;
 	return t;
 }

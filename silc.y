@@ -38,6 +38,7 @@ int main (int argc, char *argv[]) {
 	int number;
 	struct Symbol *Symbol;
 	struct Node *node;
+	struct Parameters *parameter;
 }
 
 %token <number> NUMBER
@@ -52,6 +53,7 @@ int main (int argc, char *argv[]) {
 
 %type <number> SetType FunctType;
 %type <node> exp slist statement;
+%type <parameter> Parameters
 %type <Symbol> GlobalDeclarations NewScope InitNewScope StaticScope InitStaticScope StackScope InitStackScope;
 
 %left NOT
@@ -71,14 +73,14 @@ StaticScope: InitStaticScope DeclarationBody { $$ = $1; }
 InitStaticScope:	{ $$ = NewScope('S'); }
 
 
-StackScope: InitStackScope DeclarationBody { $$ = $1; }
+StackScope: InitStackScope DeclarationBody { $1->parent = Arg; $$ = $1; }
 InitStackScope:	{ $$ = NewScope('R'); }
 
 FunctionList:	FunctionList Function
 				| Function;
 
 Function:	MainFunction
-			|	FunctType ID '(' Arguements ')' '{' StackScope slist RETURN exp BREAK '}' EndScope	{
+			|	FunctType ID '(' FormalParameters ')' '{' StackScope slist RETURN exp BREAK '}' EndScope	{
 																				$2->Type = $1;
 																				InstallFunction($2, $7);
 																				ParseFunction($8, $2, $7, $10);
@@ -86,6 +88,19 @@ Function:	MainFunction
 
 FunctType:	INTEGER		{ $$ = 3; }
 			|	BOOLEAN	{ $$ = 4; }
+
+FormalParameters:	InitNewParamList FormalParams;
+
+InitNewParamList:	{ NewParamList(); }
+
+FormalParams:	FormalParams INTEGER TypeInt FormalParamList BREAK
+				|	FormalParams BOOLEAN TypeBool FormalParamList BREAK
+				|	;
+
+FormalParamList:	FormalParamList COMMA ID { AddParam($3, 1); }
+				|	ID { AddParam($1, 1); }
+				|	FormalParamList COMMA ID '[' NUMBER ']' { AddParam($3, $5); }
+				|	ID '[' NUMBER ']' { AddParam($1, $3); }
 
 Arguements:	InitNewArgList	ArguementSet ;
 
@@ -131,10 +146,11 @@ TypeInt:	{ DeclType = 1; }
 TypeBool:	{ DeclType = 2; }
 
 DEFLIST:	DEFLIST COMMA ID { InstallVariable($3, 1); }
+			|	ID SetType '(' Arguements ')' { $1->Type = $2; DeclareFunction($1, Arg); TopScope = TopScope->parent; }
 			|	ID { InstallVariable($1, 1); }
 			|	DEFLIST COMMA ID '[' NUMBER ']' { InstallVariable($3, $5); }
 			|	ID '[' NUMBER ']' { InstallVariable($1, $3); }
-			|	DEFLIST COMMA ID SetType '(' ')' { $3->Type = $4; }
+			|	DEFLIST COMMA ID SetType '(' Arguements ')' { $3->Type = $4; DeclareFunction($3, Arg); TopScope = TopScope->parent; }
 
 SetType:	{	$$ = DeclType; }
 
@@ -151,9 +167,23 @@ statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0, 0, 0); }
 			|	IF '(' exp ')' THEN NewScope slist EndScope ELSE NewScope slist EndScope ENDIF { $$ = MakeNode(0, 'C', $3, $7, $11, $6, $10); }
 			|	WHILE '(' exp ')' DO NewScope slist EndScope ENDWHILE { $$ = MakeNode(0, 'L', $3, $7, 0, $6, 0); }
 
+Parameters:	Parameters COMMA exp	{
+										struct Parameters * F = $1;
+										while (F->next) F = F->next;
+										F->next = malloc(sizeof(struct Parameters));
+										F->next->t = $3;
+										F->next->next = 0;
+										$$ = $1;
+									} 
+			|	exp		{
+							$$ = malloc(sizeof(struct Parameters));
+							$$->t = $1;
+							$$->next = 0;
+						}
 
 exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0, 0, 0); }
-		|	ID '(' ')' { $$ = MakeNode(0, 'F', 0, 0, 0, 0, $1); }
+		|	ID '(' ')' { Para = 0; $$ = MakeNode(0, 'F', 0, 0, 0, 0, $1); }
+		|	ID '(' Parameters BREAK ')' { Para = $3; $$ = MakeNode(0, 'F', 0, 0, 0, 0, $1); }
 		|	ID	{ $$ = MakeNode(0, 'v', 0, 0, 0, $1, 0); }
 		|	ID '[' exp ']'	{ $$ = MakeNode(0, 'v', $3, 0, 0, $1, 0); }		
 		|	exp '+' exp	{ $$ = MakeNode('+', 'a', $1, $3, 0, 0, 0); }
