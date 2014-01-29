@@ -1,0 +1,25 @@
+decl
+	integer factorial(integer n;);
+enddecl
+
+integer factorial(integer n;) {
+	decl
+		integer fact;
+	enddecl
+	if (n == 1) then
+		fact = 1;
+	else
+		fact = n * factorial(n - 1;);
+	endif;
+	return fact;
+}
+
+integer main() {
+	decl
+		integer i;
+	enddecl
+	read(i);
+	i = factorial(i;);
+	write(i);
+	exit;
+}

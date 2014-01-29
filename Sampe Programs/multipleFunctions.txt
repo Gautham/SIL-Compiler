@@ -1,0 +1,41 @@
+decl
+	integer n, factorial(integer n;), test();
+	boolean fli(integer n;);
+enddecl
+
+integer factorial(integer n;) {
+	decl
+		integer fact;
+	enddecl
+	if (n == 1) then
+		fact = 1;
+	else
+		fact = n * factorial(n - 1;);
+	endif;
+	return fact;
+}
+
+integer test() {
+	write(3);
+	return 3;
+}
+
+boolean fli(integer n;) {
+	write(52);
+	return (n > 52);
+}
+
+integer main() {
+	decl
+		integer A[10], n;
+		integer i, j, t;
+		boolean f;
+	enddecl
+	i = factorial(6;);
+	write(i);
+	i = test();
+	write(i);
+	f = fli(445;);
+	write(f);
+	exit;
+}

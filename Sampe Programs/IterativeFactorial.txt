@@ -1,0 +1,26 @@
+decl
+	integer factorial(integer n;);
+enddecl
+
+integer factorial(integer n;) {
+	decl
+		integer i, fact;
+	enddecl
+	i = 1;
+	fact = 1;
+	while (i <= n) do
+		fact = fact * i;
+		i = i + 1;
+	endwhile;
+	return fact;
+}
+
+integer main() {
+	decl
+		integer i;
+	enddecl
+	read(i);
+	i = factorial(i;);
+	write(i);
+	exit;
+}
