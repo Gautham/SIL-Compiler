@@ -1,8 +1,8 @@
 %{
 #include <stdio.h>
-#include "definitions.h"
-#include "main.h"
 #include <stdlib.h>
+#include "parser.h"
+
 
 void yyerror(const char *str)
 {
@@ -64,9 +64,7 @@ int main (int argc, char *argv[]) {
 %start Program
 %%
 
-Program: GlobalDeclarations	{
-							}
-
+Program: GlobalDeclarations
 GlobalDeclarations:	StaticScope FunctionList
 
 StaticScope: InitStaticScope DeclarationBody { $$ = $1; }
@@ -83,28 +81,7 @@ Function:	MainFunction
 			|	FunctType ID '(' Arguements ')' '{' StackScope slist RETURN exp BREAK '}' EndScope	{
 																				$2->Type = $1;
 																				InstallFunction($2, $7);
-																				Arg->parent = TopScope;
-																				TopScope = $7;
-																				fprintf(fp, "%s:\n", $2->Name);
-																				fprintf(fp, "MOV R%d, BP\n", RCount++);
-																				fprintf(fp, "MOV BP, SP\n");
-																				fprintf(fp, "MOV R%d, SP\n", RCount);
-																				fprintf(fp, "MOV R%d, %d\n", RCount + 1, $7->Size);	
-																				fprintf(fp, "ADD R%d, R%d\n", RCount, RCount + 1);
-																				fprintf(fp, "MOV SP, R%d\n", RCount);			
-																				Parse($8);
-																				Parse($10);
-																				fprintf(fp, "MOV R%d, SP\n", RCount);
-																				fprintf(fp, "MOV R%d, %d\n", RCount + 1, 1 + $7->Size);
-																				fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
-																				fprintf(fp, "MOV [R%d], R%d\n", RCount, RCount - 1);
-																				RCount -= 2;
-																				fprintf(fp, "MOV BP, R%d\n", RCount);
-																				fprintf(fp, "MOV R%d, SP\n", RCount);
-																				fprintf(fp, "MOV R%d, %d\n", RCount + 1, $7->Size);	
-																				fprintf(fp, "SUB R%d, R%d\n", RCount, RCount + 1);
-																				fprintf(fp, "MOV SP, R%d\n", RCount);
-																				fprintf(fp, "RET\n");
+																				ParseFunction($8, $2, $7, $10);
 																		}
 
 FunctType:	INTEGER		{ $$ = 3; }
@@ -118,10 +95,10 @@ ArguementSet:	ArguementSet INTEGER TypeInt ArgList BREAK
 			|	ArguementSet BOOLEAN TypeBool ArgList BREAK
 			|	;
 
-ArgList:	ArgList COMMA ID { InstallArguement($3, 1, 0); }
-			|	ID { InstallArguement($1, 1, 0); }
-			|	ArgList COMMA ID '[' exp ']' { InstallArguement($3, 0, $5); }
-			|	ID '[' exp ']' { InstallArguement($1, 0, $3); }
+ArgList:	ArgList COMMA ID { InstallArguement($3, 1); }
+			|	ID { InstallArguement($1, 1); }
+			|	ArgList COMMA ID '[' NUMBER ']' { InstallArguement($3, $5); }
+			|	ID '[' NUMBER ']' { InstallArguement($1, $3); }
 
 
 MainFunction: INTEGER MAIN '{' StaticScope slist EXIT BREAK '}'	{
@@ -153,10 +130,10 @@ TypeInt:	{ DeclType = 1; }
 
 TypeBool:	{ DeclType = 2; }
 
-DEFLIST:	DEFLIST COMMA ID { InstallVariable($3, 1, 0); }
-			|	ID { InstallVariable($1, 1, 0); }
-			|	DEFLIST COMMA ID '[' exp ']' { InstallVariable($3, 0, $5); }
-			|	ID '[' exp ']' { InstallVariable($1, 0, $3); }
+DEFLIST:	DEFLIST COMMA ID { InstallVariable($3, 1); }
+			|	ID { InstallVariable($1, 1); }
+			|	DEFLIST COMMA ID '[' NUMBER ']' { InstallVariable($3, $5); }
+			|	ID '[' NUMBER ']' { InstallVariable($1, $3); }
 			|	DEFLIST COMMA ID SetType '(' ')' { $3->Type = $4; }
 
 SetType:	{	$$ = DeclType; }
@@ -195,5 +172,4 @@ exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0, 0, 0); }
 		|	'(' exp ')' { $$ = $2; }
 		|	TRUE	{ $$ = MakeNode(1, 'b', 0, 0, 0, 0, 0); }
 		|	FALSE	{ $$ = MakeNode(0, 'b', 0, 0, 0, 0, 0); }
-
 %%
