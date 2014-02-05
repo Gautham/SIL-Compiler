@@ -20,7 +20,7 @@ integer main() {
 		integer i;
 	enddecl
 	read(i);
-	i = factorial(i;);
+	i = factorial(i);
 	write(i);
 	exit;
 }

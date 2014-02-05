@@ -3,6 +3,7 @@
 #include <string.h>
 #include "definitions.h"
 #include "silc.tab.h"
+extern int LineCount;
 %}
 
 %%
@@ -27,16 +28,16 @@
 "AND"	{ return AND; }
 "OR"	{ return OR; }
 "NOT"	{ return NOT; }
-"TRUE"	{ return TRUE; }
-"FALSE"	{ return FALSE; }
-
-[ \t\n]+ ;
+"TRUE"	{ yylval.number = 1; return BOOL; }
+"FALSE"	{ yylval.number = 0; return BOOL; }
+[ \t]+ ;
+"\n" { ++LineCount; }
 [+\-*/%()=<>] { return (int)yytext[0]; }
 [\[\]]	{ return (int)yytext[0]; }
 [\{\}]	{ return (int)yytext[0]; }
-">=" { return 'g'; }
-"<=" { return 'l'; }
-"=="	{ return TOKEQUAL; }
+">=" { return GE; }
+"<=" { return LE; }
+"=="	{ return EQ; }
 ","	{	return COMMA; }
 [a-zA-Z][a-zA-Z0-9]*	{ struct Symbol *p = malloc(sizeof(struct Symbol)); p->Name = strdup(yytext); yylval.Symbol = p; return ID; }
 %%

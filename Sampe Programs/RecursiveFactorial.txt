@@ -9,7 +9,7 @@ integer factorial(integer n;) {
 	if (n == 1) then
 		fact = 1;
 	else
-		fact = n * factorial(n - 1;);
+		fact = n * factorial(n - 1);
 	endif;
 	return fact;
 }
@@ -19,7 +19,7 @@ integer main() {
 		integer i;
 	enddecl
 	read(i);
-	i = factorial(i;);
+	i = factorial(i);
 	write(i);
 	exit;
 }

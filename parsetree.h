@@ -1,6 +1,6 @@
 struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, struct Node *t3, struct Symbol *g, struct Symbol *h) {
 	struct Symbol *F, *TMP;
-	struct Parameters *param;
+	struct Node *param;
 	int tmp;
 	switch (type) {
 		case 'A':
@@ -56,14 +56,14 @@ struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, str
 			}
 			tmp = 0;
 			TMP = F->ArgList->next;
-			param = Para;
+			param = t1;
 			while (param && TMP) {
-				if (!TypeCheck(0, 0, param->t, 0, 0, TMP)) {
+				if (!TypeCheck(0, 0, param->t1, 0, 0, TMP)) {
 					printf("Arguement Mismatch in Call to Function \"%s()\"\n", h->Name);
 					exit(0);
 				}
 				TMP = TMP->next;
-				param = param->next;
+				param = param->t3;
 			}
 			if (param || TMP) {
 				printf("Arguement Mismatch in Call to Function \"%s()\"\n", h->Name);
@@ -79,6 +79,5 @@ struct Node *MakeNode(int value, int type, struct Node *t1, struct Node *t2, str
 	t->t3 = t3;
 	t->g = g;
 	t->h = h;
-	if (type == 'F') t->P = Para;
 	return t;
 }

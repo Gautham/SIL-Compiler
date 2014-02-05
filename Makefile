@@ -11,3 +11,8 @@ silc: definitions.h declarations.h variables.h parsetree.h parser.h silc.tab.c s
 
 clean:
 	rm -rf lex.yy.c silc.tab.* silc sim.txt
+
+me:
+	make clean all
+	./silc
+	./Sim sim.txt

@@ -45,7 +45,7 @@ void InstallVariable(struct Symbol *T, int size) {
 	}
 }
 
-void NewArgList() {
+void NewArguementList() {
 	Arg = malloc(sizeof(struct Symbol));
 	Arg->Type = 'A';
 	Arg->Size = 0;
@@ -70,7 +70,7 @@ void InstallArguement(struct Symbol *T, int size) {
 	TMP->next = A;
 }
 
-void NewParamList() {
+void NewParameterList() {
 	if (!FormalParam) FormalParam = malloc(sizeof(struct Symbol)); 
 	FormalParam->next = 0;
 }
@@ -140,7 +140,7 @@ void InstallFunction(struct Symbol *T, struct Symbol *Scope) {
 		printf("Function \"%s()\" was not declared.\n", T->Name);
 		exit(0);
 	}
-	if (N->Type % 2 != T->Type % 2) {
+	if (N->Type != T->Type) {
 		printf("Function Declaration & Function Definition of \"%s()\"have type mismatch.\n", N->Name);
 		exit(0);
 	}
@@ -157,12 +157,12 @@ int TypeCheck(char a, char b, struct Node * p, struct Node * q, struct Symbol *m
 		switch (p->type) {
 			case 'v':
 				TMP = Lookup(p->g->Name, 1);
-				if (TMP) typeX = (TMP->Type % 2);
+				if (TMP) typeX = TMP->Type;
 				else typeX = -1;
 				break;
 			case 'F':
 				TMP = LookupFunction(p->h->Name);
-				if (TMP) typeX = (TMP->Type % 2);
+				if (TMP) typeX = TMP->Type;
 				else typeX = -1;
 			case 'a':
 			case 'i':
@@ -179,18 +179,18 @@ int TypeCheck(char a, char b, struct Node * p, struct Node * q, struct Symbol *m
 			else printf("Function \"%s()\" was not defined.\n", p->g->Name);
 			exit(0);
 		}
-	} else if (m) typeX = m->Type % 2;
-	else typeX = a % 2;
+	} else if (m) typeX = m->Type;
+	else typeX = a;
 	if (q) {
 		switch (q->type) {
 			case 'v':
 				TMP = Lookup(q->g->Name, 1);
-				if (TMP) typeY = (TMP->Type % 2);
+				if (TMP) typeY = TMP->Type;
 				else typeY = -1;
 				break;
 			case 'F':
 				TMP = LookupFunction(q->h->Name);
-				if (TMP) typeY = (TMP->Type % 2);
+				if (TMP) typeY = TMP->Type;
 				else typeY = -1;
 			case 'a':
 			case 'i':
@@ -207,8 +207,8 @@ int TypeCheck(char a, char b, struct Node * p, struct Node * q, struct Symbol *m
 			else printf("Function \"%s()\" was not defined.\n", q->g->Name);
 			exit(0);
 		}
-	} else if (n) typeY = n->Type % 2;
-	else typeY = b % 2;
+	} else if (n) typeY = n->Type;
+	else typeY = b;
 	return (typeX == typeY);
 }
 

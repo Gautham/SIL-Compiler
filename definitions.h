@@ -4,12 +4,6 @@ struct Symbol {
 	struct Symbol *next, *parent, *ArgList, *Scope;
 };
 
-
-struct Parameters {
-	struct Node *t;
-	struct Parameters *next;
-};
-
 struct Node {
 	int value, type;
 	struct Node *t1, *t2, *t3;
