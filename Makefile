@@ -6,7 +6,7 @@ lex.yy.c: silc.l
 silc.tab.c silc.tab.h: silc.y
 	bison -d silc.y
 
-silc: definitions.h declarations.h variables.h parsetree.h parser.h silc.tab.c silc.tab.h lex.yy.c
+silc: definitions.h declarations.h variables.h parsetree.h generator.h silc.tab.c silc.tab.h lex.yy.c
 	cc lex.yy.c silc.tab.c -o silc
 
 clean:

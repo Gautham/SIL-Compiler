@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "parser.h"
+#include "generator.h"
 
 void yyerror(const char *str)
 {
@@ -61,11 +61,11 @@ InitializeStaticScope:	{ $$ = NewScope('S'); }
 InitializeStackScope:	{ $$ = NewScope('R'); }
 
 
-Function:	FunctionType ID '(' FormalParameters ')' '{' StackScope slist RETURN exp BREAK '}' EndScope
+Function:	FunctionType ID '(' FormalParameters ')' '{' StackScope slist RETURN exp BREAK EndScope '}'
 				{
 					$2->Type = $1;
 					InstallFunction($2, $7);
-					ParseFunction($8, $2, $7, $10);
+					GenerateFunction($8, $2, $7, $10);
 				}
 
 FunctionType:	INTEGER		{ $$ = 1; }
@@ -142,7 +142,7 @@ statement:	WRITE '(' exp ')' { $$ = MakeNode(0, 'W', $3, 0, 0, 0, 0); }
 			|	READ '(' ID ')' { $$ = MakeNode(0, 'R', 0, 0, 0, $3, 0); }
 			|	READ '(' ID '[' exp ']' ')' { $$ = MakeNode(0, 'R', $5, 0, 0, $3, 0); }
 			|	ID '=' exp { $$ = MakeNode(0, 'A', 0, $3, 0, $1, 0); }
-			|	ID '[' exp ']' '=' exp { $$ = MakeNode(0, 'A', $3, $6, 0, $1, 0); }			
+			|	ID '[' exp ']' '=' exp { $$ = MakeNode(0, 'A', $3, $6, 0, $1, 0); }
 			|	IF '(' exp ')' THEN NewScope slist EndScope ENDIF { $$ = MakeNode(0, 'C', $3, $7, 0, $6, 0); }
 			|	IF '(' exp ')' THEN NewScope slist EndScope ELSE NewScope slist EndScope ENDIF { $$ = MakeNode(0, 'C', $3, $7, $11, $6, $10); }
 			|	WHILE '(' exp ')' DO NewScope slist EndScope ENDWHILE { $$ = MakeNode(0, 'L', $3, $7, 0, $6, 0); }
@@ -171,10 +171,10 @@ exp:	NUMBER	{ $$ = MakeNode($1, 'i', 0, 0, 0, 0, 0); }
 		|	exp '>' exp	{ $$ = MakeNode('>', 'r', $1, $3, 0, 0, 0); }
 		|	exp '<' exp	{ $$ = MakeNode('<', 'r', $1, $3, 0, 0, 0); }
 		|	exp GE exp	{ $$ = MakeNode('g', 'r', $1, $3, 0, 0, 0); }
-		|	exp LE exp	{ $$ = MakeNode('l', 'r', $1, $3, 0, 0, 0); }		
+		|	exp LE exp	{ $$ = MakeNode('l', 'r', $1, $3, 0, 0, 0); }
 		|	exp EQ exp { $$ = MakeNode('=', 'r', $1, $3, 0, 0, 0); }
-		|	exp AND exp	{ $$ = MakeNode('a', 'l', $1, $3, 0, 0, 0); }		
-		|	exp OR exp	{ $$ = MakeNode('o', 'l', $1, $3, 0, 0, 0); }		
+		|	exp AND exp	{ $$ = MakeNode('a', 'l', $1, $3, 0, 0, 0); }
+		|	exp OR exp	{ $$ = MakeNode('o', 'l', $1, $3, 0, 0, 0); }
 		|	NOT exp	{ $$ = MakeNode('n', 'l', $2, 0, 0, 0, 0); }
 		|	'(' exp ')' { $$ = $2; }
 		|	BOOL	{ $$ = MakeNode($1, 'b', 0, 0, 0, 0, 0); }
@@ -187,7 +187,7 @@ FunctionCall:	ID '(' ')' { $$ = MakeNode(0, 'F', 0, 0, 0, 0, $1); }
 
 
 %%
- 
+
 int yywrap()
 {
 	return 1;
@@ -209,7 +209,7 @@ int main (int argc, char *argv[])
 	}
 	fprintf(fp, "MAIN:\n");
 	fprintf(fp, "MOV SP, %d\n", SP);
-	Parse(MainFunction);
+	Generate(MainFunction);
 	fprintf(fp, "HALT");
 	fclose(fp);
 	exit(0);

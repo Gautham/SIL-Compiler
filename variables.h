@@ -61,7 +61,7 @@ void InstallArguement(struct Symbol *T, int size) {
 	if (size > 0) A->Size = size;
 	else {
 		printf("Only +ve Integer Sizes are allowed for Array Dimensions.\n");
-		exit(0);		
+		exit(0);
 	}
 	A->parent = TopScope->parent;
 	A->Scope = Arg;
@@ -71,7 +71,7 @@ void InstallArguement(struct Symbol *T, int size) {
 }
 
 void NewParameterList() {
-	if (!FormalParam) FormalParam = malloc(sizeof(struct Symbol)); 
+	if (!FormalParam) FormalParam = malloc(sizeof(struct Symbol));
 	FormalParam->next = 0;
 }
 
@@ -82,7 +82,7 @@ void AddParam(struct Symbol *T, int size) {
 	if (size > 0) A->Size = size;
 	else {
 		printf("Only +ve Integer Sizes are allowed for Array Dimensions.\n");
-		exit(0);		
+		exit(0);
 	}
 	while (TMP->next != 0) TMP = TMP->next;
 	TMP->next = A;
@@ -124,12 +124,13 @@ void CheckParams(struct Symbol * Args) {
 	int flag = 1;
 	while (P && Q && flag) {
 		if (P->Type != Q->Type) flag = 0;
+		else if (P->BP != Q->BP) flag = 0;
 		P = P->next;
 		Q = Q->next;
 	}
 	if (!flag || (P || Q)) {
 		printf("Function Declaration & Function Definition have arguement mismatch.\n");
-		exit(0);		
+		exit(0);
 	}
 }
 
@@ -152,7 +153,7 @@ void InstallFunction(struct Symbol *T, struct Symbol *Scope) {
 
 int TypeCheck(char a, char b, struct Node * p, struct Node * q, struct Symbol *m, struct Symbol *n) {
 	int typeX, typeY;
-	struct Symbol *TMP, *TMP2; 
+	struct Symbol *TMP, *TMP2;
 	if (p) {
 		switch (p->type) {
 			case 'v':
