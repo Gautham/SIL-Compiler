@@ -35,6 +35,7 @@ extern int LineCount;
 [+\-*/%()=<>] { return (int)yytext[0]; }
 [\[\]]	{ return (int)yytext[0]; }
 [\{\}]	{ return (int)yytext[0]; }
+"&"  { return (int)yytext[0]; }
 ">=" { return GE; }
 "<=" { return LE; }
 "=="	{ return EQ; }

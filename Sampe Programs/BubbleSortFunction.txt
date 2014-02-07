@@ -1,0 +1,42 @@
+decl
+	integer BubbleSort(integer &A, n;);
+enddecl
+
+integer BubbleSort(integer &A, n;) {
+	decl
+		integer i, j, t;
+	enddecl
+	i = 0;
+	while (i < n) do
+		j = 0;
+		while (j < n - i -1) do
+			if (A[j] > A[j + 1]) then
+				t = A[j];
+				A[j] = A[j + 1];
+				A[j + 1] = t;
+			endif;
+			j = j + 1;
+		endwhile;
+		i = i + 1;
+	endwhile;
+	return 1;
+}
+
+integer main() {
+	decl
+		integer A[10], i, n;
+	enddecl
+	read(n);
+	i = 0;
+	while (i < n) do
+		read(A[i]);
+		i = i + 1;
+	endwhile;
+	i = BubbleSort(A, n);
+	i = 0;
+	while (i < n) do
+		write(A[i]);
+		i = i + 1;
+	endwhile;
+	exit;
+}

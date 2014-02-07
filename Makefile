@@ -14,5 +14,6 @@ clean:
 
 me:
 	make clean all
+	rm -rf lex.yy.c silc.tab.*
 	./silc
 	./Sim sim.txt

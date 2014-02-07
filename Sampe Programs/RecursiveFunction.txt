@@ -1,0 +1,29 @@
+decl
+	integer t(integer m, n;);
+enddecl
+
+integer t(integer m, n;) {
+	decl
+		integer i, j, ret;
+	enddecl
+	if (m == 0) then
+		ret = 0;
+    else
+        if (n == 0) then
+            ret = 0;
+        else
+            ret = t(t(m -1, n - 1), n);
+        endif;
+    endif;
+	return ret;
+}
+
+integer main() {
+	decl
+		integer i, j, t;
+		boolean f;
+	enddecl
+    j = t(20, 20);
+    write(j);
+	exit;
+}

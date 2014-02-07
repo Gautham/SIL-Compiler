@@ -80,19 +80,23 @@ FormalParameterTypeList:	FormalParameterTypeList INTEGER TypeInt FormalParameter
 							|	FormalParameterTypeList BOOLEAN TypeBool FormalParameterList BREAK
 							|	;
 
-FormalParameterList:	FormalParameterList COMMA ID { AddParam($3, 1); }
-						|	ID { AddParam($1, 1); }
+FormalParameterList:	FormalParameterList COMMA ID { AddParam($3, 0); }
+						|   FormalParameterList COMMA '&' ID { AddParam($4, 1); }
+						|   ID { AddParam($1, 0); }
+						|	'&' ID { AddParam($2, 1); }
 
 Arguements:	InitializeNewArguementList	ArguementSet ;
 
 InitializeNewArguementList:	{ NewArguementList(); }
 
 ArguementSet:	ArguementSet INTEGER TypeInt ArguementList BREAK
-			|	ArguementSet BOOLEAN TypeBool ArguementList BREAK
-			|	;
+				|	ArguementSet BOOLEAN TypeBool ArguementList BREAK
+				|   ;
 
-ArguementList:	ArguementList COMMA ID { InstallArguement($3, 1); }
-			|	ID { InstallArguement($1, 1); }
+ArguementList:	ArguementList COMMA ID { InstallArguement($3, 0); }
+				|   ArguementList COMMA '&' ID { InstallArguement($4, 1); }
+				|   ID { InstallArguement($1, 0); }
+				|	'&' ID { InstallArguement($2, 1); }
 
 
 NewScope:	InitNewScope Declarations { $$ = $1; }
@@ -122,6 +126,7 @@ DEFLIST:	DEFLIST COMMA ID { InstallVariable($3, 1); }
 					$1->Type = $2;
 					DeclareFunction($1, Arg);
 					TopScope = TopScope->parent;
+					DeclType = $2;
 				}
 			|	ID { InstallVariable($1, 1); }
 			|	DEFLIST COMMA ID '[' NUMBER ']' { InstallVariable($3, $5); }
@@ -131,6 +136,7 @@ DEFLIST:	DEFLIST COMMA ID { InstallVariable($3, 1); }
 					$3->Type = $4;
 					DeclareFunction($3, Arg);
 					TopScope = TopScope->parent;
+					DeclType = $4;
 				}
 SetType:	{	$$ = DeclType; }
 

@@ -19,6 +19,8 @@ void GetMemoryLocation(struct Symbol *G, struct Node *Offset) {
 			fprintf(fp, "MOV R%d, BP\n", RegisterCount);
 			fprintf(fp, "MOV R%d, %d\n", RegisterCount + 1, Arg->Size - G->Binding + 2);
 			fprintf(fp, "SUB R%d, R%d\n", RegisterCount, RegisterCount + 1);
+			if (G->BP) fprintf(fp, "MOV R%d, [R%d]\n", RegisterCount, RegisterCount);
+			break;
 	}
 	++RegisterCount;
 	if (Offset) {
@@ -31,7 +33,7 @@ void GetMemoryLocation(struct Symbol *G, struct Node *Offset) {
 
 void Generate(struct Node *T) {
 	int tmp1, tmp2, tmp3;
-	struct Symbol *TMP;
+	struct Symbol *TMP, *TMP2;
 	struct Node *param;
 	switch (T->type) {
 		case 'b':
@@ -162,10 +164,13 @@ void Generate(struct Node *T) {
 				tmp1 = 0;
 				while (tmp1 < RegisterCount) fprintf(fp, "PUSH R%d\n", tmp1++);
 				param = T->t1;
+				TMP2 = TMP->ArgList->next;
 				while (param != 0) {
-					Generate(param->t1);
+					if (TMP2->BP) GetMemoryLocation(Lookup(param->t1->g->Name, 1), param->t1->t1);
+					else Generate(param->t1);
 					fprintf(fp, "PUSH R%d\n", --RegisterCount);
 					param = param->t3;
+					TMP2 = TMP2->next;
 				}
 				fprintf(fp, "PUSH R%d\n", RegisterCount);
 				fprintf(fp, "CALL %s\n", TMP->Name);

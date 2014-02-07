@@ -1,0 +1,45 @@
+decl
+	boolean a(integer n;), b(integer &n;), c(integer &n;);
+enddecl
+
+boolean a(integer n;) {
+	decl
+		boolean i;
+	enddecl
+	write(n);
+	n = n + 1;
+	i = b(n);
+	write(i);
+	write(n);
+	return (n > 25);
+}
+
+boolean b(integer &n;) {
+	decl
+		boolean i;
+	enddecl
+	write(n);
+	n = n + 1;
+	i = c(n);
+	write(i);
+	return (n > 25);
+}
+
+boolean c(integer &n;) {
+	write(n);
+	n = n + 1;
+	return (n > 25);
+}
+
+integer main() {
+	decl
+		integer n;
+		integer i, j, t;
+		boolean f;
+	enddecl
+	i = 24;
+	f = a(i);
+	write(f);
+	write(i);
+	exit;
+}

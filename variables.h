@@ -54,15 +54,12 @@ void NewArguementList() {
 	TopScope = Arg;
 }
 
-void InstallArguement(struct Symbol *T, int size) {
+void InstallArguement(struct Symbol *T, int isReferenced) {
 	struct Symbol *TMP = Arg, *A = malloc(sizeof(struct Symbol));
 	A->Name = T->Name;
 	A->Type = DeclType;
-	if (size > 0) A->Size = size;
-	else {
-		printf("Only +ve Integer Sizes are allowed for Array Dimensions.\n");
-		exit(0);
-	}
+	A->BP = isReferenced;
+	A->Size = 1;
 	A->parent = TopScope->parent;
 	A->Scope = Arg;
 	A->Binding = TopScope->Size++;
@@ -75,15 +72,12 @@ void NewParameterList() {
 	FormalParam->next = 0;
 }
 
-void AddParam(struct Symbol *T, int size) {
+void AddParam(struct Symbol *T, int isReferenced) {
 	struct Symbol *TMP = FormalParam, *A = malloc(sizeof(struct Symbol));
 	A->Name = T->Name;
 	A->Type = DeclType;
-	if (size > 0) A->Size = size;
-	else {
-		printf("Only +ve Integer Sizes are allowed for Array Dimensions.\n");
-		exit(0);
-	}
+	A->BP = isReferenced;
+	A->Size = 1;
 	while (TMP->next != 0) TMP = TMP->next;
 	TMP->next = A;
 }
@@ -120,7 +114,7 @@ struct Symbol *LookupFunction(char *Name) {
 }
 
 void CheckParams(struct Symbol * Args) {
-	struct Symbol * P =	FormalParam->next, *Q = Args;
+	struct Symbol * P = FormalParam->next, *Q = Args;
 	int flag = 1;
 	while (P && Q && flag) {
 		if (P->Type != Q->Type) flag = 0;
