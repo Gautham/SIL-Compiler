@@ -86,9 +86,10 @@ struct Symbol *Lookup(char *Name, int isRecursive) {
 	struct Symbol *L = TopScope, *TMP;
 	do {
 		TMP = L->next;
+		if (L->Type == 'A') L = GlobalScope;
+		else L = L->parent;
 		while (TMP != 0 && strcmp(TMP->Name, Name) != 0) TMP = TMP->next;
 		if (TMP != 0) return TMP;
-		L = L->parent;
 	} while (isRecursive && L);
 	return 0;
 }

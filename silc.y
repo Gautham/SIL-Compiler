@@ -45,7 +45,7 @@ void yyerror(const char *str)
 Program: GlobalDeclarations FunctionDefinitions MainFunction
 
 
-GlobalDeclarations:	StaticScope
+GlobalDeclarations:	StaticScope { GlobalScope = $1; }
 FunctionDefinitions:	FunctionDefinitions Function
 						| ;
 MainFunction:	INTEGER MAIN '{' StaticScope slist EXIT BREAK '}' { MainFunction = $5; }
